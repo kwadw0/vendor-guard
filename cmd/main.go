@@ -11,11 +11,14 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
+	Logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	
 
 	if _, err := os.Stat(".env"); err == nil {
-		godotenv.Load()
+		err := godotenv.Load()
+		if err != nil {
+			Logger.Warn("Failed to load env", "error", err)
+		}
 	}
 
 	cfg := config{
@@ -28,7 +31,7 @@ func main() {
 
 	conn, err := pgxpool.New(context.Background(), cfg.db.DSN)
 	if err != nil {
-		logger.Error("failed to connect to database", "error", err)
+		Logger.Error("failed to connect to database", "error", err)
 		os.Exit(1)
 	}
 	defer conn.Close()
@@ -37,10 +40,11 @@ func main() {
 		config: cfg,
 		db: conn,
 		validator: validator.New(),
+		logger: Logger,
 	}
 
 	if err := app.run(app.mount()); err != nil {
-		logger.Error("Failed to start application", "error", err)
+		Logger.Error("Failed to start application", "error", err)
 		os.Exit(1)
 	}
 	

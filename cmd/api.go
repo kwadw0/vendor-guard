@@ -12,7 +12,7 @@ import (
 )
 
 func (app *application) run(h http.Handler) error {
-	slog.Info("Server is running and listening at", "addr", app.config.Addr)
+	app.logger.Info("Server is running and listening at", "addr", app.config.Addr)
 	return http.ListenAndServe(app.config.Addr, h)
 }
 
@@ -21,7 +21,10 @@ func (app *application) mount() http.Handler {
 	r.Use(middleware.Logger)
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("hello world"))
+		_, err := w.Write([]byte("hello world"))
+		if err != nil {
+			app.logger.Error("failed to write response", "error", err)
+		}
 	})
 
 	return r
@@ -31,6 +34,7 @@ type application struct {
 	config    config
 	db        *pgxpool.Pool
 	validator *validator.Validate
+	logger    *slog.Logger
 }
 
 type config struct {
