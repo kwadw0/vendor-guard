@@ -1,0 +1,55 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binaries
+*.test
+
+# Output binaries
+bin/
+dist/
+build/
+
+# Coverage files
+coverage.out
+coverage.html
+*.coverprofile
+
+# Go workspace
+go.work
+go.work.sum
+
+# Vendor (ignore only if not committing vendor)
+vendor/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+
+# IDE
+.vscode/
+.idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+
+# Air hot reload
+.air.toml
+
+# Swagger generated docs (optional)
+docs/docs.go
+docs/swagger.json
+docs/swagger.yaml
