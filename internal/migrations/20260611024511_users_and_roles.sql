@@ -28,6 +28,7 @@ CREATE TABLE users (
   email varchar(255) NOT NULL UNIQUE,
   password varchar(255) NOT NULL,
   phone varchar(255) NOT NULL UNIQUE,
+  organization_id uuid NULL REFERENCES organizations(id),
   role_id uuid NOT NULL REFERENCES roles(id),
   avatar_url varchar(255),
   is_active boolean NOT NULL DEFAULT true,
@@ -48,4 +49,10 @@ BEFORE UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS roles CASCADE;
 -- +goose StatementEnd

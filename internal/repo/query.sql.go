@@ -12,6 +12,63 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createOrganization = `-- name: CreateOrganization :one
+INSERT INTO organizations (
+  name,
+  description,
+  website_url,
+  industry,
+  team_size,
+  primary_customer_type,
+  owner_role
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  $5,
+  $6,
+  $7
+) RETURNING id, name, description, website_url, industry, team_size, primary_customer_type, owner_role, is_active, created_at, updated_at
+`
+
+type CreateOrganizationParams struct {
+	Name                string      `json:"name"`
+	Description         pgtype.Text `json:"description"`
+	WebsiteUrl          pgtype.Text `json:"website_url"`
+	Industry            pgtype.Text `json:"industry"`
+	TeamSize            pgtype.Text `json:"team_size"`
+	PrimaryCustomerType pgtype.Text `json:"primary_customer_type"`
+	OwnerRole           string      `json:"owner_role"`
+}
+
+func (q *Queries) CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (Organization, error) {
+	row := q.db.QueryRow(ctx, createOrganization,
+		arg.Name,
+		arg.Description,
+		arg.WebsiteUrl,
+		arg.Industry,
+		arg.TeamSize,
+		arg.PrimaryCustomerType,
+		arg.OwnerRole,
+	)
+	var i Organization
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.WebsiteUrl,
+		&i.Industry,
+		&i.TeamSize,
+		&i.PrimaryCustomerType,
+		&i.OwnerRole,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const createRole = `-- name: CreateRole :one
 
 INSERT INTO roles (
@@ -61,7 +118,7 @@ INSERT INTO users (
   $5,
   $6,
   $7
-) RETURNING id, first_name, last_name, email, password, phone, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at
+) RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -92,6 +149,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Email,
 		&i.Password,
 		&i.Phone,
+		&i.OrganizationID,
 		&i.RoleID,
 		&i.AvatarUrl,
 		&i.IsActive,
@@ -103,6 +161,15 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const deleteOrganization = `-- name: DeleteOrganization :exec
+DELETE FROM organizations WHERE id = $1
+`
+
+func (q *Queries) DeleteOrganization(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteOrganization, id)
+	return err
 }
 
 const deleteRole = `-- name: DeleteRole :one
@@ -122,27 +189,94 @@ func (q *Queries) DeleteRole(ctx context.Context, id uuid.UUID) (Role, error) {
 	return i, err
 }
 
-const deleteUser = `-- name: DeleteUser :one
-DELETE FROM users WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at
+const deleteUser = `-- name: DeleteUser :exec
+DELETE FROM users
+WHERE id = $1
 `
 
-func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) (User, error) {
-	row := q.db.QueryRow(ctx, deleteUser, id)
-	var i User
+func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteUser, id)
+	return err
+}
+
+const getAllOrganizations = `-- name: GetAllOrganizations :many
+SELECT id, name, description, website_url, industry, team_size, primary_customer_type, owner_role, is_active, created_at, updated_at FROM organizations
+`
+
+func (q *Queries) GetAllOrganizations(ctx context.Context) ([]Organization, error) {
+	rows, err := q.db.Query(ctx, getAllOrganizations)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Organization
+	for rows.Next() {
+		var i Organization
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.WebsiteUrl,
+			&i.Industry,
+			&i.TeamSize,
+			&i.PrimaryCustomerType,
+			&i.OwnerRole,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getOrganizationById = `-- name: GetOrganizationById :one
+SELECT id, name, description, website_url, industry, team_size, primary_customer_type, owner_role, is_active, created_at, updated_at FROM organizations WHERE id = $1
+`
+
+func (q *Queries) GetOrganizationById(ctx context.Context, id uuid.UUID) (Organization, error) {
+	row := q.db.QueryRow(ctx, getOrganizationById, id)
+	var i Organization
 	err := row.Scan(
 		&i.ID,
-		&i.FirstName,
-		&i.LastName,
-		&i.Email,
-		&i.Password,
-		&i.Phone,
-		&i.RoleID,
-		&i.AvatarUrl,
+		&i.Name,
+		&i.Description,
+		&i.WebsiteUrl,
+		&i.Industry,
+		&i.TeamSize,
+		&i.PrimaryCustomerType,
+		&i.OwnerRole,
 		&i.IsActive,
-		&i.EmailVerified,
-		&i.PhoneVerified,
-		&i.RefreshToken,
-		&i.RefreshTokenExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getOrganizationByUserID = `-- name: GetOrganizationByUserID :one
+SELECT o.id, o.name, o.description, o.website_url, o.industry, o.team_size, o.primary_customer_type, o.owner_role, o.is_active, o.created_at, o.updated_at FROM organizations o
+INNER JOIN users u ON u.organization_id = o.id
+WHERE u.id = $1::uuid
+`
+
+func (q *Queries) GetOrganizationByUserID(ctx context.Context, dollar_1 uuid.UUID) (Organization, error) {
+	row := q.db.QueryRow(ctx, getOrganizationByUserID, dollar_1)
+	var i Organization
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.WebsiteUrl,
+		&i.Industry,
+		&i.TeamSize,
+		&i.PrimaryCustomerType,
+		&i.OwnerRole,
+		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -184,7 +318,7 @@ func (q *Queries) GetRoleByName(ctx context.Context, name string) (Role, error) 
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, first_name, last_name, email, password, phone, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at FROM users WHERE email = $1
+SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at FROM users WHERE email = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -197,6 +331,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Email,
 		&i.Password,
 		&i.Phone,
+		&i.OrganizationID,
 		&i.RoleID,
 		&i.AvatarUrl,
 		&i.IsActive,
@@ -211,7 +346,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, first_name, last_name, email, password, phone, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at FROM users WHERE id = $1
+SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
@@ -224,6 +359,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.Email,
 		&i.Password,
 		&i.Phone,
+		&i.OrganizationID,
 		&i.RoleID,
 		&i.AvatarUrl,
 		&i.IsActive,
@@ -238,7 +374,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 }
 
 const getUserByRefreshToken = `-- name: GetUserByRefreshToken :one
-SELECT id, first_name, last_name, email, password, phone, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at FROM users
+SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at FROM users
 WHERE refresh_token = $1
   AND refresh_token_expires_at > now()
 `
@@ -253,6 +389,7 @@ func (q *Queries) GetUserByRefreshToken(ctx context.Context, refreshToken pgtype
 		&i.Email,
 		&i.Password,
 		&i.Phone,
+		&i.OrganizationID,
 		&i.RoleID,
 		&i.AvatarUrl,
 		&i.IsActive,
@@ -297,11 +434,20 @@ func (q *Queries) ListRoles(ctx context.Context) ([]Role, error) {
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, first_name, last_name, email, password, phone, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at FROM users
+SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at
+FROM users
+ORDER BY created_at DESC
+LIMIT $1
+OFFSET $2
 `
 
-func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
-	rows, err := q.db.Query(ctx, listUsers)
+type ListUsersParams struct {
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
+}
+
+func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
+	rows, err := q.db.Query(ctx, listUsers, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -316,6 +462,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.Email,
 			&i.Password,
 			&i.Phone,
+			&i.OrganizationID,
 			&i.RoleID,
 			&i.AvatarUrl,
 			&i.IsActive,
@@ -346,6 +493,58 @@ WHERE id = $1
 func (q *Queries) RevokeRefreshToken(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, revokeRefreshToken, id)
 	return err
+}
+
+const updateOrganization = `-- name: UpdateOrganization :one
+UPDATE organizations SET
+  name = $2,
+  description = $3,
+  website_url = $4,
+  industry = $5,
+  team_size = $6,
+  primary_customer_type = $7,
+  owner_role = $8
+  WHERE id = $1
+  RETURNING id, name, description, website_url, industry, team_size, primary_customer_type, owner_role, is_active, created_at, updated_at
+`
+
+type UpdateOrganizationParams struct {
+	ID                  uuid.UUID   `json:"id"`
+	Name                string      `json:"name"`
+	Description         pgtype.Text `json:"description"`
+	WebsiteUrl          pgtype.Text `json:"website_url"`
+	Industry            pgtype.Text `json:"industry"`
+	TeamSize            pgtype.Text `json:"team_size"`
+	PrimaryCustomerType pgtype.Text `json:"primary_customer_type"`
+	OwnerRole           string      `json:"owner_role"`
+}
+
+func (q *Queries) UpdateOrganization(ctx context.Context, arg UpdateOrganizationParams) (Organization, error) {
+	row := q.db.QueryRow(ctx, updateOrganization,
+		arg.ID,
+		arg.Name,
+		arg.Description,
+		arg.WebsiteUrl,
+		arg.Industry,
+		arg.TeamSize,
+		arg.PrimaryCustomerType,
+		arg.OwnerRole,
+	)
+	var i Organization
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.WebsiteUrl,
+		&i.Industry,
+		&i.TeamSize,
+		&i.PrimaryCustomerType,
+		&i.OwnerRole,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const updateRole = `-- name: UpdateRole :one
@@ -379,11 +578,11 @@ UPDATE users SET
   first_name = $2,
   last_name = $3,
   email = $4,
-  password = $5,
-  phone = $6,
-  role_id = $7,
-  avatar_url = $8
-WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at
+  phone = $5,
+  role_id = $6,
+  avatar_url = $7
+WHERE id = $1
+RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at
 `
 
 type UpdateUserParams struct {
@@ -391,7 +590,6 @@ type UpdateUserParams struct {
 	FirstName string      `json:"first_name"`
 	LastName  string      `json:"last_name"`
 	Email     string      `json:"email"`
-	Password  string      `json:"password"`
 	Phone     string      `json:"phone"`
 	RoleID    uuid.UUID   `json:"role_id"`
 	AvatarUrl pgtype.Text `json:"avatar_url"`
@@ -403,7 +601,6 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.FirstName,
 		arg.LastName,
 		arg.Email,
-		arg.Password,
 		arg.Phone,
 		arg.RoleID,
 		arg.AvatarUrl,
@@ -416,6 +613,78 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.Email,
 		&i.Password,
 		&i.Phone,
+		&i.OrganizationID,
+		&i.RoleID,
+		&i.AvatarUrl,
+		&i.IsActive,
+		&i.EmailVerified,
+		&i.PhoneVerified,
+		&i.RefreshToken,
+		&i.RefreshTokenExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateUserOrganization = `-- name: UpdateUserOrganization :one
+UPDATE users SET
+  organization_id = $2
+WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at
+`
+
+type UpdateUserOrganizationParams struct {
+	ID             uuid.UUID   `json:"id"`
+	OrganizationID pgtype.UUID `json:"organization_id"`
+}
+
+func (q *Queries) UpdateUserOrganization(ctx context.Context, arg UpdateUserOrganizationParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserOrganization, arg.ID, arg.OrganizationID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Email,
+		&i.Password,
+		&i.Phone,
+		&i.OrganizationID,
+		&i.RoleID,
+		&i.AvatarUrl,
+		&i.IsActive,
+		&i.EmailVerified,
+		&i.PhoneVerified,
+		&i.RefreshToken,
+		&i.RefreshTokenExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :one
+UPDATE users SET
+  password = $2
+WHERE id = $1
+RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at
+`
+
+type UpdateUserPasswordParams struct {
+	ID       uuid.UUID `json:"id"`
+	Password string    `json:"password"`
+}
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserPassword, arg.ID, arg.Password)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Email,
+		&i.Password,
+		&i.Phone,
+		&i.OrganizationID,
 		&i.RoleID,
 		&i.AvatarUrl,
 		&i.IsActive,
@@ -430,11 +699,10 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 }
 
 const updateUserRefreshToken = `-- name: UpdateUserRefreshToken :one
-
 UPDATE users SET
   refresh_token = $2,
   refresh_token_expires_at = $3
-WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at
+WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at
 `
 
 type UpdateUserRefreshTokenParams struct {
@@ -443,12 +711,6 @@ type UpdateUserRefreshTokenParams struct {
 	RefreshTokenExpiresAt pgtype.Timestamptz `json:"refresh_token_expires_at"`
 }
 
-// -- name: UpdateUserOrganization :one
-// UPDATE users SET
-//
-//	organization_id = $2
-//
-// WHERE id = $1 RETURNING *;
 func (q *Queries) UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefreshTokenParams) (User, error) {
 	row := q.db.QueryRow(ctx, updateUserRefreshToken, arg.ID, arg.RefreshToken, arg.RefreshTokenExpiresAt)
 	var i User
@@ -459,6 +721,7 @@ func (q *Queries) UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefr
 		&i.Email,
 		&i.Password,
 		&i.Phone,
+		&i.OrganizationID,
 		&i.RoleID,
 		&i.AvatarUrl,
 		&i.IsActive,

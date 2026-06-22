@@ -28,22 +28,33 @@ UPDATE users SET
   first_name = $2,
   last_name = $3,
   email = $4,
-  password = $5,
-  phone = $6,
-  role_id = $7,
-  avatar_url = $8
-WHERE id = $1 RETURNING *;
+  phone = $5,
+  role_id = $6,
+  avatar_url = $7
+WHERE id = $1
+RETURNING *;
 
--- name: DeleteUser :one
-DELETE FROM users WHERE id = $1 RETURNING *;
+-- name: UpdateUserPassword :one
+UPDATE users SET
+  password = $2
+WHERE id = $1
+RETURNING *;
+
+-- name: DeleteUser :exec
+DELETE FROM users
+WHERE id = $1;
 
 -- name: ListUsers :many
-SELECT * FROM users;
+SELECT *
+FROM users
+ORDER BY created_at DESC
+LIMIT $1
+OFFSET $2;
 
--- -- name: UpdateUserOrganization :one
--- UPDATE users SET
---   organization_id = $2
--- WHERE id = $1 RETURNING *;
+-- name: UpdateUserOrganization :one
+UPDATE users SET
+  organization_id = $2
+WHERE id = $1 RETURNING *;
 
 -- name: UpdateUserRefreshToken :one
 UPDATE users SET
@@ -94,3 +105,48 @@ WHERE id = $1 RETURNING *;
 
 -- name: DeleteRole :one
 DELETE FROM roles WHERE id = $1 RETURNING *;
+
+-- name: CreateOrganization :one
+INSERT INTO organizations (
+  name,
+  description,
+  website_url,
+  industry,
+  team_size,
+  primary_customer_type,
+  owner_role
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  $5,
+  $6,
+  $7
+) RETURNING *;
+
+-- name: GetOrganizationById :one
+SELECT * FROM organizations WHERE id = $1;
+
+-- name: GetAllOrganizations :many
+SELECT * FROM organizations;
+
+-- name: GetOrganizationByUserID :one
+SELECT o.* FROM organizations o
+INNER JOIN users u ON u.organization_id = o.id
+WHERE u.id = $1::uuid;
+
+-- name: UpdateOrganization :one
+UPDATE organizations SET
+  name = $2,
+  description = $3,
+  website_url = $4,
+  industry = $5,
+  team_size = $6,
+  primary_customer_type = $7,
+  owner_role = $8
+  WHERE id = $1
+  RETURNING *;
+ 
+-- name: DeleteOrganization :exec
+DELETE FROM organizations WHERE id = $1;

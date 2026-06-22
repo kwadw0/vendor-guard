@@ -1,6 +1,5 @@
 package users
 
-
 type CreateUserDto struct {
 	FirstName string `json:"first_name" validate:"required"`
 	LastName  string `json:"last_name" validate:"required"`
@@ -9,6 +8,15 @@ type CreateUserDto struct {
 	Phone     string `json:"phone" validate:"required"`
 	RoleID    string `json:"roleID" validate:"required"`
 	AvatarURL string `json:"avatar_url"`
+}
+
+type UpdateUserDto struct {
+	FirstName *string `json:"first_name"`
+	LastName  *string `json:"last_name"`
+	Email     *string `json:"email"`
+	Phone     *string `json:"phone"`
+	RoleID    *string `json:"role_id"`
+	AvatarURL *string `json:"avatar_url"`
 }
 
 type UserResponseDto struct {

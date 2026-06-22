@@ -9,6 +9,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Organization struct {
+	ID                  uuid.UUID          `json:"id"`
+	Name                string             `json:"name"`
+	Description         pgtype.Text        `json:"description"`
+	WebsiteUrl          pgtype.Text        `json:"website_url"`
+	Industry            pgtype.Text        `json:"industry"`
+	TeamSize            pgtype.Text        `json:"team_size"`
+	PrimaryCustomerType pgtype.Text        `json:"primary_customer_type"`
+	OwnerRole           string             `json:"owner_role"`
+	IsActive            bool               `json:"is_active"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Role struct {
 	ID          uuid.UUID          `json:"id"`
 	Name        string             `json:"name"`
@@ -24,6 +38,7 @@ type User struct {
 	Email                 string             `json:"email"`
 	Password              string             `json:"password"`
 	Phone                 string             `json:"phone"`
+	OrganizationID        pgtype.UUID        `json:"organization_id"`
 	RoleID                uuid.UUID          `json:"role_id"`
 	AvatarUrl             pgtype.Text        `json:"avatar_url"`
 	IsActive              bool               `json:"is_active"`

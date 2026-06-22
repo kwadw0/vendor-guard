@@ -12,27 +12,31 @@ import (
 )
 
 type Querier interface {
+	CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (Organization, error)
 	// ============================================================
 	// ROLES
 	// ============================================================
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteOrganization(ctx context.Context, id uuid.UUID) error
 	DeleteRole(ctx context.Context, id uuid.UUID) (Role, error)
-	DeleteUser(ctx context.Context, id uuid.UUID) (User, error)
+	DeleteUser(ctx context.Context, id uuid.UUID) error
+	GetAllOrganizations(ctx context.Context) ([]Organization, error)
+	GetOrganizationById(ctx context.Context, id uuid.UUID) (Organization, error)
+	GetOrganizationByUserID(ctx context.Context, dollar_1 uuid.UUID) (Organization, error)
 	GetRoleByID(ctx context.Context, id uuid.UUID) (Role, error)
 	GetRoleByName(ctx context.Context, name string) (Role, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByRefreshToken(ctx context.Context, refreshToken pgtype.Text) (User, error)
 	ListRoles(ctx context.Context) ([]Role, error)
-	ListUsers(ctx context.Context) ([]User, error)
+	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
 	RevokeRefreshToken(ctx context.Context, id uuid.UUID) error
+	UpdateOrganization(ctx context.Context, arg UpdateOrganizationParams) (Organization, error)
 	UpdateRole(ctx context.Context, arg UpdateRoleParams) (Role, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
-	// -- name: UpdateUserOrganization :one
-	// UPDATE users SET
-	//   organization_id = $2
-	// WHERE id = $1 RETURNING *;
+	UpdateUserOrganization(ctx context.Context, arg UpdateUserOrganizationParams) (User, error)
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (User, error)
 	UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefreshTokenParams) (User, error)
 }
 
