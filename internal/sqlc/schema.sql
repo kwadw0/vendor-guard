@@ -9,7 +9,9 @@ create table "roles" (
 insert into "roles" ("name", "description") values
   ('owner',  'Full access to the organization'),
   ('admin',  'Can manage members and settings'),
-  ('member', 'Standard access');
+  ('member', 'Standard access'),
+  ('manager','Can manage resources across the platform'),
+  ('viewer', 'Read-only access across assigned domains');
 
 create trigger trg_roles_updated_at
   before update on "roles"
@@ -91,6 +93,7 @@ create table "users" (
   "password"        varchar(255) not null,
   "phone"           varchar(255) not null unique,
   "organization_id"  uuid         null references organizations(id),
+  "vendor_id"        uuid         null,
   "role_id"         uuid         not null references roles(id),
   "avatar_url"      varchar(255) null,
   "is_active"       boolean      not null default true,
@@ -110,3 +113,41 @@ create trigger trg_users_updated_at
   before update on "users"
   for each row execute function set_updated_at();
 
+
+CREATE TABLE vendors (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id),
+
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL unique,
+    phone VARCHAR(255) null,
+
+    status VARCHAR(20) DEFAULT 'pending',
+
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+create index idx_vendors_email          on "vendors"("email");
+CREATE INDEX idx_vendors_org_id         on "vendors"("organization_id");
+
+create trigger trg_vendors_updated_at
+  before update on "vendors"
+  for each row execute function set_updated_at();
+
+CREATE TABLE vendor_invitations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    vendor_id UUID NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    invited_by UUID NOT NULL,
+    role_id UUID NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    expires_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_vendor_invitations_vendor_id ON vendor_invitations(vendor_id);
+CREATE INDEX idx_vendor_invitations_email ON vendor_invitations(email);
+CREATE INDEX idx_vendor_invitations_token ON vendor_invitations(token);

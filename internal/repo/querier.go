@@ -18,10 +18,14 @@ type Querier interface {
 	// ============================================================
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	CreateVendorInvitation(ctx context.Context, arg CreateVendorInvitationParams) (VendorInvitation, error)
+	CreateVendors(ctx context.Context, arg CreateVendorsParams) (Vendor, error)
 	DeleteOrganization(ctx context.Context, id uuid.UUID) error
 	DeleteRole(ctx context.Context, id uuid.UUID) (Role, error)
 	DeleteUser(ctx context.Context, id uuid.UUID) error
+	DeleteVendor(ctx context.Context, id uuid.UUID) error
 	GetAllOrganizations(ctx context.Context) ([]Organization, error)
+	GetAllVendors(ctx context.Context) ([]Vendor, error)
 	GetOrganizationById(ctx context.Context, id uuid.UUID) (Organization, error)
 	GetOrganizationByUserID(ctx context.Context, dollar_1 uuid.UUID) (Organization, error)
 	GetRoleByID(ctx context.Context, id uuid.UUID) (Role, error)
@@ -29,6 +33,11 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByRefreshToken(ctx context.Context, refreshToken pgtype.Text) (User, error)
+	GetVendorById(ctx context.Context, id uuid.UUID) (Vendor, error)
+	GetVendorByUserID(ctx context.Context, dollar_1 uuid.UUID) (Vendor, error)
+	GetVendorInvitationByToken(ctx context.Context, token string) (VendorInvitation, error)
+	GetVendorInvitationsByVendor(ctx context.Context, vendorID uuid.UUID) ([]VendorInvitation, error)
+	GetVendorsByOrg(ctx context.Context, organizationID uuid.UUID) ([]Vendor, error)
 	ListRoles(ctx context.Context) ([]Role, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
 	RevokeRefreshToken(ctx context.Context, id uuid.UUID) error
@@ -38,6 +47,9 @@ type Querier interface {
 	UpdateUserOrganization(ctx context.Context, arg UpdateUserOrganizationParams) (User, error)
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (User, error)
 	UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefreshTokenParams) (User, error)
+	UpdateUserVendor(ctx context.Context, arg UpdateUserVendorParams) (User, error)
+	UpdateVendor(ctx context.Context, arg UpdateVendorParams) (Vendor, error)
+	UpdateVendorInvitationStatus(ctx context.Context, arg UpdateVendorInvitationStatusParams) (VendorInvitation, error)
 }
 
 var _ Querier = (*Queries)(nil)

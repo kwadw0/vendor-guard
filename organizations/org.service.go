@@ -3,10 +3,12 @@ package organizations
 import (
 	"context"
 	"errors"
+	"fmt"
+
+	"vendor-guard/internal/repo"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
-	"vendor-guard/internal/repo"
 )
 
 var ErrOrganizationNotFound = errors.New("organization not found")
@@ -50,13 +52,14 @@ func (s *organizationService) CreateOrganization(ctx context.Context, dto Create
 	}
 
 	// 2. Link the authenticated user to the newly created organization.
-	_, err = s.queries.UpdateUserOrganization(ctx, repo.UpdateUserOrganizationParams{
+	updateUserOrg, err := s.queries.UpdateUserOrganization(ctx, repo.UpdateUserOrganizationParams{
 		ID:             uid,
 		OrganizationID: pgtype.UUID{Bytes: org.ID, Valid: true},
 	})
 	if err != nil {
 		return OrganizationResponseDto{}, err
 	}
+	fmt.Printf("Updated user org: %+v\n", updateUserOrg.OrganizationID)
 
 	return mapToDto(org), nil
 }

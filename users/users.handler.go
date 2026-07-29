@@ -29,16 +29,17 @@ func NewHandler(service UserService, v *validator.Validate) Handler {
 }
 
 // CreateUser godoc
-// @Summary Create a new user
-// @Description Creates a new user in the system
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param request body CreateUserDto true "User creation data"
-// @Success 201 {object} utils.SuccessResponse[UserResponseDto]
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /api/users [post]
+//
+//	@Summary		Create a new user
+//	@Description	Creates a new user in the system
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		CreateUserDto	true	"User creation data"
+//	@Success		201		{object}	utils.SuccessResponse[UserResponseDto]
+//	@Failure		400		{object}	utils.ErrorResponse
+//	@Failure		500		{object}	utils.ErrorResponse
+//	@Router			/api/users [post]
 func (h *handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var dto CreateUserDto
 	if err := utils.ReadJSON(w, r, &dto); err != nil {
@@ -61,16 +62,17 @@ func (h *handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetUser godoc
-// @Summary Get a user by ID
-// @Description Retrieve user details by ID
-// @Tags users
-// @Produce json
-// @Param id path string true "User ID"
-// @Success 200 {object} utils.SuccessResponse[UserResponseDto]
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /api/users/{id} [get]
+//
+//	@Summary		Get a user by ID
+//	@Description	Retrieve user details by ID
+//	@Tags			users
+//	@Produce		json
+//	@Param			id	path		string	true	"User ID"
+//	@Success		200	{object}	utils.SuccessResponse[UserResponseDto]
+//	@Failure		400	{object}	utils.ErrorResponse
+//	@Failure		404	{object}	utils.ErrorResponse
+//	@Failure		500	{object}	utils.ErrorResponse
+//	@Router			/api/users/{id} [get]
 func (h *handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
@@ -92,13 +94,14 @@ func (h *handler) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAllUsers godoc
-// @Summary Get all users
-// @Description Retrieve a list of all users
-// @Tags users
-// @Produce json
-// @Success 200 {object} utils.SuccessResponse[[]UserResponseDto]
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /api/users [get]
+//
+//	@Summary		Get all users
+//	@Description	Retrieve a list of all users
+//	@Tags			users
+//	@Produce		json
+//	@Success		200	{object}	utils.SuccessResponse[[]UserResponseDto]
+//	@Failure		500	{object}	utils.ErrorResponse
+//	@Router			/api/users [get]
 func (h *handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	res, err := h.service.GetAllUsers(r.Context())
 	if err != nil {
@@ -110,18 +113,19 @@ func (h *handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateUser godoc
-// @Summary Update a user
-// @Description Update user details
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param id path string true "User ID"
-// @Param request body UpdateUserDto true "Update data"
-// @Success 200 {object} utils.SuccessResponse[UserResponseDto]
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /api/users/{id} [put]
+//
+//	@Summary		Update a user
+//	@Description	Update user details
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path		string			true	"User ID"
+//	@Param			request	body		UpdateUserDto	true	"Update data"
+//	@Success		200		{object}	utils.SuccessResponse[UserResponseDto]
+//	@Failure		400		{object}	utils.ErrorResponse
+//	@Failure		404		{object}	utils.ErrorResponse
+//	@Failure		500		{object}	utils.ErrorResponse
+//	@Router			/api/users/{id} [put]
 func (h *handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
@@ -154,14 +158,15 @@ func (h *handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteUser godoc
-// @Summary Delete a user
-// @Description Delete a user by ID
-// @Tags users
-// @Param id path string true "User ID"
-// @Success 200 {object} utils.SuccessResponse[utils.EmptyData] "User deleted successfully"
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /api/users/{id} [delete]
+//
+//	@Summary		Delete a user
+//	@Description	Delete a user by ID
+//	@Tags			users
+//	@Param			id	path		string									true	"User ID"
+//	@Success		200	{object}	utils.SuccessResponse[utils.EmptyData]	"User deleted successfully"
+//	@Failure		400	{object}	utils.ErrorResponse
+//	@Failure		500	{object}	utils.ErrorResponse
+//	@Router			/api/users/{id} [delete]
 func (h *handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {

@@ -118,7 +118,7 @@ INSERT INTO users (
   $5,
   $6,
   $7
-) RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at
+) RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id
 `
 
 type CreateUserParams struct {
@@ -157,6 +157,96 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.PhoneVerified,
 		&i.RefreshToken,
 		&i.RefreshTokenExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.VendorID,
+	)
+	return i, err
+}
+
+const createVendorInvitation = `-- name: CreateVendorInvitation :one
+INSERT INTO vendor_invitations (
+  vendor_id,
+  email,
+  token,
+  invited_by,
+  role_id,
+  expires_at
+) VALUES (
+  $1, $2, $3, $4, $5, $6
+) RETURNING id, vendor_id, email, token, invited_by, role_id, status, expires_at, created_at, updated_at
+`
+
+type CreateVendorInvitationParams struct {
+	VendorID  uuid.UUID          `json:"vendor_id"`
+	Email     string             `json:"email"`
+	Token     string             `json:"token"`
+	InvitedBy uuid.UUID          `json:"invited_by"`
+	RoleID    uuid.UUID          `json:"role_id"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+}
+
+func (q *Queries) CreateVendorInvitation(ctx context.Context, arg CreateVendorInvitationParams) (VendorInvitation, error) {
+	row := q.db.QueryRow(ctx, createVendorInvitation,
+		arg.VendorID,
+		arg.Email,
+		arg.Token,
+		arg.InvitedBy,
+		arg.RoleID,
+		arg.ExpiresAt,
+	)
+	var i VendorInvitation
+	err := row.Scan(
+		&i.ID,
+		&i.VendorID,
+		&i.Email,
+		&i.Token,
+		&i.InvitedBy,
+		&i.RoleID,
+		&i.Status,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createVendors = `-- name: CreateVendors :one
+INSERT INTO vendors (
+  organization_id,
+  name,
+  email,
+  phone
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4
+) RETURNING id, organization_id, name, email, phone, status, created_at, updated_at
+`
+
+type CreateVendorsParams struct {
+	OrganizationID uuid.UUID   `json:"organization_id"`
+	Name           string      `json:"name"`
+	Email          string      `json:"email"`
+	Phone          pgtype.Text `json:"phone"`
+}
+
+func (q *Queries) CreateVendors(ctx context.Context, arg CreateVendorsParams) (Vendor, error) {
+	row := q.db.QueryRow(ctx, createVendors,
+		arg.OrganizationID,
+		arg.Name,
+		arg.Email,
+		arg.Phone,
+	)
+	var i Vendor
+	err := row.Scan(
+		&i.ID,
+		&i.OrganizationID,
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -199,6 +289,16 @@ func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteVendor = `-- name: DeleteVendor :exec
+DELETE FROM vendors 
+WHERE id = $1
+`
+
+func (q *Queries) DeleteVendor(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteVendor, id)
+	return err
+}
+
 const getAllOrganizations = `-- name: GetAllOrganizations :many
 SELECT id, name, description, website_url, industry, team_size, primary_customer_type, owner_role, is_active, created_at, updated_at FROM organizations
 `
@@ -222,6 +322,40 @@ func (q *Queries) GetAllOrganizations(ctx context.Context) ([]Organization, erro
 			&i.PrimaryCustomerType,
 			&i.OwnerRole,
 			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAllVendors = `-- name: GetAllVendors :many
+SELECT id, organization_id, name, email, phone, status, created_at, updated_at FROM vendors
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetAllVendors(ctx context.Context) ([]Vendor, error) {
+	rows, err := q.db.Query(ctx, getAllVendors)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Vendor
+	for rows.Next() {
+		var i Vendor
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrganizationID,
+			&i.Name,
+			&i.Email,
+			&i.Phone,
+			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -318,7 +452,7 @@ func (q *Queries) GetRoleByName(ctx context.Context, name string) (Role, error) 
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at FROM users WHERE email = $1
+SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id FROM users WHERE email = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -341,12 +475,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.RefreshTokenExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.VendorID,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at FROM users WHERE id = $1
+SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
@@ -369,12 +504,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.RefreshTokenExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.VendorID,
 	)
 	return i, err
 }
 
 const getUserByRefreshToken = `-- name: GetUserByRefreshToken :one
-SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at FROM users
+SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id FROM users
 WHERE refresh_token = $1
   AND refresh_token_expires_at > now()
 `
@@ -399,8 +535,143 @@ func (q *Queries) GetUserByRefreshToken(ctx context.Context, refreshToken pgtype
 		&i.RefreshTokenExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.VendorID,
 	)
 	return i, err
+}
+
+const getVendorById = `-- name: GetVendorById :one
+SELECT id, organization_id, name, email, phone, status, created_at, updated_at FROM vendors WHERE id = $1
+`
+
+func (q *Queries) GetVendorById(ctx context.Context, id uuid.UUID) (Vendor, error) {
+	row := q.db.QueryRow(ctx, getVendorById, id)
+	var i Vendor
+	err := row.Scan(
+		&i.ID,
+		&i.OrganizationID,
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getVendorByUserID = `-- name: GetVendorByUserID :one
+SELECT v.id, v.organization_id, v.name, v.email, v.phone, v.status, v.created_at, v.updated_at FROM vendors v
+INNER JOIN users u ON u.vendor_id = v.id
+WHERE u.id = $1::uuid
+`
+
+func (q *Queries) GetVendorByUserID(ctx context.Context, dollar_1 uuid.UUID) (Vendor, error) {
+	row := q.db.QueryRow(ctx, getVendorByUserID, dollar_1)
+	var i Vendor
+	err := row.Scan(
+		&i.ID,
+		&i.OrganizationID,
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getVendorInvitationByToken = `-- name: GetVendorInvitationByToken :one
+SELECT id, vendor_id, email, token, invited_by, role_id, status, expires_at, created_at, updated_at FROM vendor_invitations WHERE token = $1
+`
+
+func (q *Queries) GetVendorInvitationByToken(ctx context.Context, token string) (VendorInvitation, error) {
+	row := q.db.QueryRow(ctx, getVendorInvitationByToken, token)
+	var i VendorInvitation
+	err := row.Scan(
+		&i.ID,
+		&i.VendorID,
+		&i.Email,
+		&i.Token,
+		&i.InvitedBy,
+		&i.RoleID,
+		&i.Status,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getVendorInvitationsByVendor = `-- name: GetVendorInvitationsByVendor :many
+SELECT id, vendor_id, email, token, invited_by, role_id, status, expires_at, created_at, updated_at FROM vendor_invitations WHERE vendor_id = $1 ORDER BY created_at DESC
+`
+
+func (q *Queries) GetVendorInvitationsByVendor(ctx context.Context, vendorID uuid.UUID) ([]VendorInvitation, error) {
+	rows, err := q.db.Query(ctx, getVendorInvitationsByVendor, vendorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []VendorInvitation
+	for rows.Next() {
+		var i VendorInvitation
+		if err := rows.Scan(
+			&i.ID,
+			&i.VendorID,
+			&i.Email,
+			&i.Token,
+			&i.InvitedBy,
+			&i.RoleID,
+			&i.Status,
+			&i.ExpiresAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getVendorsByOrg = `-- name: GetVendorsByOrg :many
+SELECT id, organization_id, name, email, phone, status, created_at, updated_at FROM vendors
+WHERE organization_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetVendorsByOrg(ctx context.Context, organizationID uuid.UUID) ([]Vendor, error) {
+	rows, err := q.db.Query(ctx, getVendorsByOrg, organizationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Vendor
+	for rows.Next() {
+		var i Vendor
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrganizationID,
+			&i.Name,
+			&i.Email,
+			&i.Phone,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listRoles = `-- name: ListRoles :many
@@ -434,7 +705,7 @@ func (q *Queries) ListRoles(ctx context.Context) ([]Role, error) {
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at
+SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id
 FROM users
 ORDER BY created_at DESC
 LIMIT $1
@@ -472,6 +743,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.RefreshTokenExpiresAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.VendorID,
 		); err != nil {
 			return nil, err
 		}
@@ -582,7 +854,7 @@ UPDATE users SET
   role_id = $6,
   avatar_url = $7
 WHERE id = $1
-RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at
+RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id
 `
 
 type UpdateUserParams struct {
@@ -623,6 +895,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.RefreshTokenExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.VendorID,
 	)
 	return i, err
 }
@@ -630,7 +903,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 const updateUserOrganization = `-- name: UpdateUserOrganization :one
 UPDATE users SET
   organization_id = $2
-WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at
+WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id
 `
 
 type UpdateUserOrganizationParams struct {
@@ -658,6 +931,7 @@ func (q *Queries) UpdateUserOrganization(ctx context.Context, arg UpdateUserOrga
 		&i.RefreshTokenExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.VendorID,
 	)
 	return i, err
 }
@@ -666,7 +940,7 @@ const updateUserPassword = `-- name: UpdateUserPassword :one
 UPDATE users SET
   password = $2
 WHERE id = $1
-RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at
+RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id
 `
 
 type UpdateUserPasswordParams struct {
@@ -694,6 +968,7 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPassword
 		&i.RefreshTokenExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.VendorID,
 	)
 	return i, err
 }
@@ -702,7 +977,7 @@ const updateUserRefreshToken = `-- name: UpdateUserRefreshToken :one
 UPDATE users SET
   refresh_token = $2,
   refresh_token_expires_at = $3
-WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at
+WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id
 `
 
 type UpdateUserRefreshTokenParams struct {
@@ -729,6 +1004,108 @@ func (q *Queries) UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefr
 		&i.PhoneVerified,
 		&i.RefreshToken,
 		&i.RefreshTokenExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.VendorID,
+	)
+	return i, err
+}
+
+const updateUserVendor = `-- name: UpdateUserVendor :one
+UPDATE users SET
+  vendor_id = $2
+WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id
+`
+
+type UpdateUserVendorParams struct {
+	ID       uuid.UUID   `json:"id"`
+	VendorID pgtype.UUID `json:"vendor_id"`
+}
+
+func (q *Queries) UpdateUserVendor(ctx context.Context, arg UpdateUserVendorParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserVendor, arg.ID, arg.VendorID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Email,
+		&i.Password,
+		&i.Phone,
+		&i.OrganizationID,
+		&i.RoleID,
+		&i.AvatarUrl,
+		&i.IsActive,
+		&i.EmailVerified,
+		&i.PhoneVerified,
+		&i.RefreshToken,
+		&i.RefreshTokenExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.VendorID,
+	)
+	return i, err
+}
+
+const updateVendor = `-- name: UpdateVendor :one
+
+UPDATE vendors SET
+  name=$2,
+  email=$3,
+  phone=$4
+WHERE id = $1
+RETURNING id, organization_id, name, email, phone, status, created_at, updated_at
+`
+
+type UpdateVendorParams struct {
+	ID    uuid.UUID   `json:"id"`
+	Name  string      `json:"name"`
+	Email string      `json:"email"`
+	Phone pgtype.Text `json:"phone"`
+}
+
+func (q *Queries) UpdateVendor(ctx context.Context, arg UpdateVendorParams) (Vendor, error) {
+	row := q.db.QueryRow(ctx, updateVendor,
+		arg.ID,
+		arg.Name,
+		arg.Email,
+		arg.Phone,
+	)
+	var i Vendor
+	err := row.Scan(
+		&i.ID,
+		&i.OrganizationID,
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateVendorInvitationStatus = `-- name: UpdateVendorInvitationStatus :one
+UPDATE vendor_invitations SET status = $2 WHERE id = $1 RETURNING id, vendor_id, email, token, invited_by, role_id, status, expires_at, created_at, updated_at
+`
+
+type UpdateVendorInvitationStatusParams struct {
+	ID     uuid.UUID `json:"id"`
+	Status string    `json:"status"`
+}
+
+func (q *Queries) UpdateVendorInvitationStatus(ctx context.Context, arg UpdateVendorInvitationStatusParams) (VendorInvitation, error) {
+	row := q.db.QueryRow(ctx, updateVendorInvitationStatus, arg.ID, arg.Status)
+	var i VendorInvitation
+	err := row.Scan(
+		&i.ID,
+		&i.VendorID,
+		&i.Email,
+		&i.Token,
+		&i.InvitedBy,
+		&i.RoleID,
+		&i.Status,
+		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

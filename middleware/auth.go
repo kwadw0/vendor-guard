@@ -15,15 +15,21 @@ var errUnauthorized = errors.New("unauthorized")
 type contextKey string
 
 const UserIDKey contextKey = "user_id"
+const RoleIDKey contextKey = "role_id"
 
 // GetUserID retrieves the authenticated user's ID (as a string) from the request context.
-// Returns an empty string if the key is missing.
 func GetUserID(r *http.Request) string {
 	val, _ := r.Context().Value(UserIDKey).(string)
 	return val
 }
 
-// RequireAuth validates the Bearer token and injects the user_id into the request context.
+// GetRoleID retrieves the authenticated user's role ID (as a string) from the request context.
+func GetRoleID(r *http.Request) string {
+	val, _ := r.Context().Value(RoleIDKey).(string)
+	return val
+}
+
+// RequireAuth validates the Bearer token and injects user_id and role_id into the request context.
 func RequireAuth(jwtSecret string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -42,6 +48,7 @@ func RequireAuth(jwtSecret string) func(http.Handler) http.Handler {
 			}
 
 			ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
+			ctx = context.WithValue(ctx, RoleIDKey, claims.RoleID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

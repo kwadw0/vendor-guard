@@ -5,9 +5,56 @@
 package repo
 
 import (
+	"database/sql/driver"
+	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type VendorStatus string
+
+const (
+	VendorStatusPending   VendorStatus = "pending"
+	VendorStatusActive    VendorStatus = "active"
+	VendorStatusInactive  VendorStatus = "inactive"
+	VendorStatusSuspended VendorStatus = "suspended"
+)
+
+func (e *VendorStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = VendorStatus(s)
+	case string:
+		*e = VendorStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for VendorStatus: %T", src)
+	}
+	return nil
+}
+
+type NullVendorStatus struct {
+	VendorStatus VendorStatus `json:"vendor_status"`
+	Valid        bool         `json:"valid"` // Valid is true if VendorStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullVendorStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.VendorStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.VendorStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullVendorStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.VendorStatus), nil
+}
 
 type Organization struct {
 	ID                  uuid.UUID          `json:"id"`
@@ -48,4 +95,29 @@ type User struct {
 	RefreshTokenExpiresAt pgtype.Timestamptz `json:"refresh_token_expires_at"`
 	CreatedAt             pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	VendorID              pgtype.UUID        `json:"vendor_id"`
+}
+
+type Vendor struct {
+	ID             uuid.UUID          `json:"id"`
+	OrganizationID uuid.UUID          `json:"organization_id"`
+	Name           string             `json:"name"`
+	Email          string             `json:"email"`
+	Phone          pgtype.Text        `json:"phone"`
+	Status         NullVendorStatus   `json:"status"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type VendorInvitation struct {
+	ID        uuid.UUID          `json:"id"`
+	VendorID  uuid.UUID          `json:"vendor_id"`
+	Email     string             `json:"email"`
+	Token     string             `json:"token"`
+	InvitedBy uuid.UUID          `json:"invited_by"`
+	RoleID    uuid.UUID          `json:"role_id"`
+	Status    string             `json:"status"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }

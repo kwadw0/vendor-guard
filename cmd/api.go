@@ -15,6 +15,7 @@ import (
 	appMiddleware "vendor-guard/middleware"
 	"vendor-guard/organizations"
 	"vendor-guard/users"
+	"vendor-guard/vendors"
 )
 
 func (app *application) run(h http.Handler) error {
@@ -39,6 +40,7 @@ func (app *application) mount() http.Handler {
 	})
 
 	repoQueries := repo.New(app.db)
+	authMiddleware := appMiddleware.RequireAuth(app.config.jwtSecret)
 
 	// Auth routes
 	authService := auth.NewService(repoQueries, app.config.jwtSecret)
@@ -65,19 +67,38 @@ func (app *application) mount() http.Handler {
 	// Organization routes
 	orgService := organizations.NewOrganizationService(repoQueries)
 	orgHandler := organizations.NewOrganizationHandler(orgService, app.validator)
-	authMiddleware := appMiddleware.RequireAuth(app.config.jwtSecret)
 
 	r.Route("/api/organizations", func(r chi.Router) {
-		// Protected: must be signed in
 		r.With(authMiddleware).Post("/", orgHandler.CreateOrganization)
 		r.With(authMiddleware).Get("/me", orgHandler.GetOrganizationByUserID)
 
-		// Public
 		r.Get("/", orgHandler.GetAllOrganizations)
 		r.Get("/{id}", orgHandler.GetOrganizationById)
 		r.Put("/{id}", orgHandler.UpdateOrganization)
 		r.Delete("/{id}", orgHandler.DeleteOrganization)
 	})
+
+	// Vendor routes
+	vendorService := vendors.NewService(repoQueries)
+	vendorHandler := vendors.NewVendorHandler(vendorService, app.validator)
+
+	vendorInviteService := vendors.NewInviteService(repoQueries, app.config.jwtSecret)
+	vendorInviteHandler := vendors.NewInviteHandler(vendorInviteService, app.validator)
+
+	r.Route("/api/vendors", func(r chi.Router) {
+		r.With(authMiddleware).Post("/", vendorHandler.CreateVendor)
+		r.With(authMiddleware).Get("/", vendorHandler.GetAllVendors)
+		r.With(authMiddleware).Get("/{id}", vendorHandler.GetVendorByID)
+		r.With(authMiddleware).Put("/{id}", vendorHandler.UpdateVendor)
+		r.With(authMiddleware).Delete("/{id}", vendorHandler.DeleteVendor)
+
+		// Vendor invitation routes
+		r.With(authMiddleware).Post("/{vendorId}/invite", vendorInviteHandler.InviteVendorUser)
+		r.With(authMiddleware).Get("/{vendorId}/invite", vendorInviteHandler.GetVendorInvitations)
+	})
+
+	// Public vendor invitation acceptance
+	r.Post("/api/vendors/invite/accept", vendorInviteHandler.AcceptInvitation)
 
 	return r
 }

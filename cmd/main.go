@@ -12,20 +12,17 @@ import (
 	_ "vendor-guard/docs"
 )
 
-// @title Vendor Guard API
-// @version 1.0
-// @description This is a sample server for Vendor Guard.
-// @termsOfService http://swagger.io/terms/
-
-// @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
-
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-
-// @host localhost:8000
-// @BasePath /
+// @title			Vendor Guard API
+// @version		1.0
+// @description	This is a sample server for Vendor Guard.
+// @termsOfService	http://swagger.io/terms/
+// @contact.name	API Support
+// @contact.url	http://www.swagger.io/support
+// @contact.email	support@swagger.io
+// @license.name	Apache 2.0
+// @license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+// @host			localhost:8000
+// @BasePath		/
 func main() {
 	Logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 

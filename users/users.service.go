@@ -180,6 +180,7 @@ func mapUserToResponse(u repo.User) UserResponseDto {
 		Email:     u.Email,
 		Phone:     u.Phone,
 		RoleID:    u.RoleID.String(),
+		OrganizationID: uuid.UUID(u.OrganizationID.Bytes).String(),
 		AvatarURL: u.AvatarUrl.String,
 		CreatedAt: u.CreatedAt.Time.String(),
 		UpdatedAt: u.UpdatedAt.Time.String(),

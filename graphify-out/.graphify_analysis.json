@@ -1,0 +1,420 @@
+{
+  "communities": {
+    "0": [
+      "auth_auth_handler_go_request",
+      "auth_auth_handler_go_responsewriter",
+      "auth_handler_login",
+      "auth_handler_refreshtoken",
+      "auth_handler_signup",
+      "middleware_auth_getuserid",
+      "middleware_auth_go_request",
+      "organizations_org_handler_go_request",
+      "organizations_org_handler_go_responsewriter",
+      "organizations_organizationhandler",
+      "organizations_organizationhandler_createorganization",
+      "organizations_organizationhandler_deleteorganization",
+      "organizations_organizationhandler_getallorganizations",
+      "organizations_organizationhandler_getorganizationbyid",
+      "organizations_organizationhandler_getorganizationbyuserid",
+      "organizations_organizationhandler_updateorganization",
+      "users_handler",
+      "users_handler_createuser",
+      "users_handler_deleteuser",
+      "users_handler_getallusers",
+      "users_handler_getuser",
+      "users_handler_updateuser",
+      "users_users_handler",
+      "users_users_handler_go_request",
+      "users_users_handler_go_responsewriter",
+      "users_users_handler_go_validate",
+      "users_users_handler_newhandler",
+      "utils_emptydata",
+      "utils_errorresponse",
+      "utils_json",
+      "utils_json_errorjson",
+      "utils_json_go_request",
+      "utils_json_go_responsewriter",
+      "utils_json_readjson",
+      "utils_json_writejson",
+      "utils_successresponse",
+      "vendors_vendorhandler",
+      "vendors_vendorhandler_createvendor",
+      "vendors_vendorhandler_deletevendor",
+      "vendors_vendorhandler_getallvendors",
+      "vendors_vendorhandler_getvendorbyid",
+      "vendors_vendorhandler_updatevendor",
+      "vendors_vendors_handler_go_request",
+      "vendors_vendors_handler_go_responsewriter"
+    ],
+    "1": [
+      "auth_auth_dto",
+      "auth_auth_handler",
+      "auth_auth_handler_go_validate",
+      "auth_auth_handler_newhandler",
+      "auth_auth_service",
+      "auth_auth_service_go_context",
+      "auth_auth_service_go_queries",
+      "auth_auth_service_newservice",
+      "auth_authservice",
+      "auth_authservice_generateandsavetokens",
+      "auth_authservice_login",
+      "auth_authservice_refreshtoken",
+      "auth_authservice_signup",
+      "auth_handler",
+      "auth_logindto",
+      "auth_refreshtokendto",
+      "auth_signupdto",
+      "auth_tokenresponsedto",
+      "utils_hashing",
+      "utils_hashing_hashpassword",
+      "utils_hashing_verifypassword"
+    ],
+    "2": [
+      "organizations_createorganizationdto",
+      "organizations_org_dto",
+      "organizations_org_dto_go_time",
+      "organizations_org_dto_go_uuid",
+      "organizations_org_service",
+      "organizations_org_service_go_context",
+      "organizations_org_service_go_queries",
+      "organizations_org_service_go_text",
+      "organizations_org_service_go_uuid",
+      "organizations_org_service_maptodto",
+      "organizations_org_service_neworganizationservice",
+      "organizations_org_service_topgtext",
+      "organizations_organizationresponsedto",
+      "organizations_organizationservice",
+      "organizations_organizationservice_createorganization",
+      "organizations_organizationservice_deleteorganization",
+      "organizations_organizationservice_getallorganizations",
+      "organizations_organizationservice_getorganizationbyid",
+      "organizations_organizationservice_getorganizationbyuserid",
+      "organizations_organizationservice_updateorganization",
+      "organizations_updateorganizationdto"
+    ],
+    "3": [
+      "vendors_createvendordto",
+      "vendors_updatevendordto",
+      "vendors_vendorresponse",
+      "vendors_vendorresponsewrapper",
+      "vendors_vendors_dto",
+      "vendors_vendors_handler",
+      "vendors_vendors_handler_go_validate",
+      "vendors_vendors_handler_newvendorhandler",
+      "vendors_vendors_service",
+      "vendors_vendors_service_go_context",
+      "vendors_vendors_service_go_queries",
+      "vendors_vendors_service_mapvendortoresponse",
+      "vendors_vendors_service_newservice",
+      "vendors_vendorservice",
+      "vendors_vendorservice_createvendor",
+      "vendors_vendorservice_deletevendor",
+      "vendors_vendorservice_getallvendors",
+      "vendors_vendorservice_getvendorbyid",
+      "vendors_vendorservice_updatevendor"
+    ],
+    "4": [
+      "auth_jwt_jwt",
+      "auth_jwt_jwt_generatetokenpair",
+      "auth_jwt_jwt_go_time",
+      "auth_jwt_jwt_validaterefreshtoken",
+      "auth_jwt_jwt_validatetoken",
+      "cmd_main",
+      "cmd_main_main",
+      "internal_repo_db",
+      "internal_repo_db_go_queries",
+      "internal_repo_db_go_repo_queries",
+      "internal_repo_db_new",
+      "jwt_customclaims",
+      "jwt_tokenpair",
+      "registeredclaims",
+      "repo_dbtx",
+      "repo_queries_withtx",
+      "tx"
+    ],
+    "5": [
+      "cmd_api",
+      "cmd_api_go_handler",
+      "cmd_api_go_validate",
+      "cmd_application",
+      "cmd_application_mount",
+      "cmd_application_run",
+      "cmd_config",
+      "cmd_dbconfig",
+      "logger",
+      "middleware_auth",
+      "middleware_auth_go_handler",
+      "middleware_auth_requireauth",
+      "middleware_contextkey",
+      "organizations_org_handler",
+      "organizations_org_handler_go_validate",
+      "organizations_org_handler_neworganizationhandler",
+      "pool"
+    ],
+    "6": [
+      "internal_repo_query_sql",
+      "internal_repo_query_sql_go_text",
+      "repo_createorganizationparams",
+      "repo_createroleparams",
+      "repo_createuserparams",
+      "repo_createvendorsparams",
+      "repo_queries_createuser",
+      "repo_queries_createvendors",
+      "repo_queries_getuserbyrefreshtoken",
+      "repo_queries_updateuser",
+      "repo_queries_updatevendor",
+      "repo_updateorganizationparams",
+      "repo_updateroleparams",
+      "repo_updateuserparams",
+      "repo_updatevendorparams"
+    ],
+    "7": [
+      "users_createuserdto",
+      "users_updateuserdto",
+      "users_userresponsedto",
+      "users_users_dto",
+      "users_users_service",
+      "users_users_service_go_context",
+      "users_users_service_go_queries",
+      "users_users_service_mapusertoresponse",
+      "users_users_service_newservice",
+      "users_userservice",
+      "users_userservice_createuser",
+      "users_userservice_deleteuser",
+      "users_userservice_getallusers",
+      "users_userservice_getuser",
+      "users_userservice_updateuser"
+    ],
+    "8": [
+      "internal_repo_models",
+      "internal_repo_models_go_text",
+      "internal_repo_models_go_timestamptz",
+      "internal_repo_models_go_uuid",
+      "repo_queries_getallvendors",
+      "repo_queries_getuserbyemail",
+      "repo_queries_getuserbyid",
+      "repo_queries_getvendorbyid",
+      "repo_user",
+      "repo_vendor"
+    ],
+    "9": [
+      "internal_repo_query_sql_go_uuid",
+      "repo_queries_deleteorganization",
+      "repo_queries_deleteuser",
+      "repo_queries_deletevendor",
+      "repo_queries_revokerefreshtoken",
+      "repo_queries_updateuserorganization",
+      "repo_queries_updateuserpassword",
+      "repo_updateuserorganizationparams",
+      "repo_updateuserpasswordparams"
+    ],
+    "10": [
+      "internal_repo_query_sql_go_repo_queries",
+      "repo_queries_createrole",
+      "repo_queries_deleterole",
+      "repo_queries_getrolebyid",
+      "repo_queries_getrolebyname",
+      "repo_queries_listroles",
+      "repo_queries_updaterole",
+      "repo_role"
+    ],
+    "11": [
+      "internal_repo_query_sql_go_context",
+      "repo_organization",
+      "repo_queries_createorganization",
+      "repo_queries_getallorganizations",
+      "repo_queries_getorganizationbyid",
+      "repo_queries_getorganizationbyuserid",
+      "repo_queries_updateorganization"
+    ],
+    "12": [
+      "internal_repo_query_sql_go_timestamptz",
+      "repo_queries_updateuserrefreshtoken",
+      "repo_updateuserrefreshtokenparams"
+    ],
+    "13": [
+      "check_db",
+      "check_db_sh__entry"
+    ],
+    "14": [
+      "internal_repo_querier",
+      "repo_querier"
+    ],
+    "15": [
+      "repo_listusersparams",
+      "repo_queries_listusers"
+    ],
+    "16": [
+      "internal_common_errors"
+    ],
+    "17": [
+      "pkg_vendor_guard"
+    ]
+  },
+  "cohesion": {
+    "0": 0.12684989429175475,
+    "1": 0.18095238095238095,
+    "2": 0.20476190476190476,
+    "3": 0.2046783625730994,
+    "4": 0.16176470588235295,
+    "5": 0.13970588235294118,
+    "6": 0.2,
+    "7": 0.2857142857142857,
+    "8": 0.26666666666666666,
+    "9": 0.2222222222222222,
+    "10": 0.42857142857142855,
+    "11": 0.47619047619047616,
+    "12": 0.6666666666666666,
+    "13": 1.0,
+    "14": 1.0,
+    "15": 1.0,
+    "16": 1.0,
+    "17": 1.0
+  },
+  "gods": [
+    {
+      "id": "internal_repo_query_sql_go_repo_queries",
+      "label": "Queries",
+      "degree": 28
+    },
+    {
+      "id": "utils_json_errorjson",
+      "label": "ErrorJSON()",
+      "degree": 22
+    },
+    {
+      "id": "utils_json_writejson",
+      "label": "WriteJSON()",
+      "degree": 21
+    },
+    {
+      "id": "internal_repo_db_new",
+      "label": "New()",
+      "degree": 16
+    },
+    {
+      "id": "repo_user",
+      "label": "User",
+      "degree": 14
+    },
+    {
+      "id": "utils_json_readjson",
+      "label": "ReadJSON()",
+      "degree": 12
+    },
+    {
+      "id": "organizations_organizationservice",
+      "label": "OrganizationService",
+      "degree": 11
+    },
+    {
+      "id": "repo_organization",
+      "label": "Organization",
+      "degree": 10
+    },
+    {
+      "id": "repo_role",
+      "label": "Role",
+      "degree": 10
+    },
+    {
+      "id": "organizations_organizationhandler",
+      "label": "OrganizationHandler",
+      "degree": 10
+    }
+  ],
+  "surprises": [
+    {
+      "source": "RequireAuth()",
+      "target": "ValidateToken()",
+      "source_files": [
+        "middleware/auth.go",
+        "auth/jwt/jwt.go"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "main()",
+      "target": "New()",
+      "source_files": [
+        "cmd/main.go",
+        "internal/repo/db.go"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; peripheral node `main()` unexpectedly reaches hub `New()`"
+    },
+    {
+      "source": "RequireAuth()",
+      "target": "ErrorJSON()",
+      "source_files": [
+        "middleware/auth.go",
+        "utils/json.go"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "GenerateTokenPair()",
+      "target": "New()",
+      "source_files": [
+        "auth/jwt/jwt.go",
+        "internal/repo/db.go"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories"
+    },
+    {
+      "source": "ValidateToken()",
+      "target": "New()",
+      "source_files": [
+        "auth/jwt/jwt.go",
+        "internal/repo/db.go"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `New()` connect `New` to `ErrorJSON`, `OrganizationService`, `application`?",
+      "why": "High betweenness centrality (0.328) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `mapToDto()` connect `OrganizationService` to `Context`?",
+      "why": "High betweenness centrality (0.211) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `Organization` connect `Context` to `User`, `OrganizationService`?",
+      "why": "High betweenness centrality (0.210) - this node is a cross-community bridge."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 20 inferred relationships involving `ErrorJSON()` (e.g. with `.Login()` and `.RefreshToken()`) actually correct?",
+      "why": "`ErrorJSON()` has 20 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 19 inferred relationships involving `WriteJSON()` (e.g. with `.Login()` and `.RefreshToken()`) actually correct?",
+      "why": "`WriteJSON()` has 19 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `check_db.sh script`, `vendor-guard`, `Querier` to the rest of the system?",
+      "why": "7 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `ErrorJSON` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.12684989429175475 - nodes in this community are weakly interconnected."
+    }
+  ]
+}

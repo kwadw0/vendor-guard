@@ -25,17 +25,18 @@ func NewHandler(service AuthService, v *validator.Validate) Handler {
 }
 
 // Signup godoc
-// @Summary Register a new user
-// @Description Creates a new user and returns access and refresh tokens
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param request body SignupDto true "User signup data"
-// @Success 201 {object} utils.SuccessResponse[TokenResponseDto] "Signup successful"
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 409 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /api/auth/signup [post]
+//
+//	@Summary		Register a new user
+//	@Description	Creates a new user and returns access and refresh tokens
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		SignupDto								true	"User signup data"
+//	@Success		201		{object}	utils.SuccessResponse[TokenResponseDto]	"Signup successful"
+//	@Failure		400		{object}	utils.ErrorResponse
+//	@Failure		409		{object}	utils.ErrorResponse
+//	@Failure		500		{object}	utils.ErrorResponse
+//	@Router			/api/auth/signup [post]
 func (h *handler) Signup(w http.ResponseWriter, r *http.Request) {
 	var dto SignupDto
 	if err := utils.ReadJSON(w, r, &dto); err != nil {
@@ -62,17 +63,18 @@ func (h *handler) Signup(w http.ResponseWriter, r *http.Request) {
 }
 
 // Login godoc
-// @Summary User login
-// @Description Authenticates a user and returns access and refresh tokens
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param request body LoginDto true "User login credentials"
-// @Success 200 {object} utils.SuccessResponse[TokenResponseDto] "Login successful"
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /api/auth/login [post]
+//
+//	@Summary		User login
+//	@Description	Authenticates a user and returns access and refresh tokens
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		LoginDto								true	"User login credentials"
+//	@Success		200		{object}	utils.SuccessResponse[TokenResponseDto]	"Login successful"
+//	@Failure		400		{object}	utils.ErrorResponse
+//	@Failure		401		{object}	utils.ErrorResponse
+//	@Failure		500		{object}	utils.ErrorResponse
+//	@Router			/api/auth/login [post]
 func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 	var dto LoginDto
 	if err := utils.ReadJSON(w, r, &dto); err != nil {
@@ -99,17 +101,18 @@ func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // RefreshToken godoc
-// @Summary Refresh access token
-// @Description Generates a new pair of access and refresh tokens using a valid refresh token
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param request body RefreshTokenDto true "Refresh token"
-// @Success 200 {object} utils.SuccessResponse[TokenResponseDto] "Token refreshed successfully"
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 401 {object} utils.ErrorResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /api/auth/refresh [post]
+//
+//	@Summary		Refresh access token
+//	@Description	Generates a new pair of access and refresh tokens using a valid refresh token
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		RefreshTokenDto							true	"Refresh token"
+//	@Success		200		{object}	utils.SuccessResponse[TokenResponseDto]	"Token refreshed successfully"
+//	@Failure		400		{object}	utils.ErrorResponse
+//	@Failure		401		{object}	utils.ErrorResponse
+//	@Failure		500		{object}	utils.ErrorResponse
+//	@Router			/api/auth/refresh [post]
 func (h *handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var dto RefreshTokenDto
 	if err := utils.ReadJSON(w, r, &dto); err != nil {

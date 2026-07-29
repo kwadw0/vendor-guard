@@ -2,15 +2,16 @@ package utils
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 )
 
 type EmptyData struct{}
 
-type SuccessResponse[T any] struct {
+type SuccessResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message,omitempty"`
-	Data    T      `json:"data,omitempty"`
+	Data    interface{}      `json:"data,omitempty"`
 }
 
 type ErrorResponse struct {
@@ -19,17 +20,19 @@ type ErrorResponse struct {
 	Code    string `json:"code,omitempty"`
 }
 
-func WriteJSON(w http.ResponseWriter, status int, message string, data any) error {
+func WriteJSON(w http.ResponseWriter, status int, message string, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
-	resp := SuccessResponse[any]{
+	resp := SuccessResponse {
 		Success: true,
 		Message: message,
 		Data:    data,
 	}
 
-	return json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("failed to encode response", "error", err)
+	}
 }
 
 func ReadJSON(w http.ResponseWriter, r *http.Request, data any) error {
@@ -41,7 +44,7 @@ func ReadJSON(w http.ResponseWriter, r *http.Request, data any) error {
 	return dec.Decode(data)
 }
 
-func ErrorJSON(w http.ResponseWriter, status int, err error, code ...string) error {
+func ErrorJSON(w http.ResponseWriter, status int, err error, code ...string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
@@ -66,5 +69,7 @@ func ErrorJSON(w http.ResponseWriter, status int, err error, code ...string) err
 		Message: err.Error(),
 		Code:    errCode,
 	}
-	return json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("failed to encode response", "error", err)
+	}
 }

@@ -56,6 +56,11 @@ UPDATE users SET
   organization_id = $2
 WHERE id = $1 RETURNING *;
 
+-- name: UpdateUserVendor :one
+UPDATE users SET
+  vendor_id = $2
+WHERE id = $1 RETURNING *;
+
 -- name: UpdateUserRefreshToken :one
 UPDATE users SET
   refresh_token = $2,
@@ -150,3 +155,67 @@ UPDATE organizations SET
  
 -- name: DeleteOrganization :exec
 DELETE FROM organizations WHERE id = $1;
+
+-- name: GetVendorById :one
+SELECT * FROM vendors WHERE id = $1;
+
+-- name: GetAllVendors :many
+SELECT * FROM vendors
+ORDER BY created_at DESC;
+
+-- name: CreateVendors :one 
+INSERT INTO vendors (
+  organization_id,
+  name,
+  email,
+  phone
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4
+) RETURNING *;
+
+-- name: UpdateVendor :one
+
+UPDATE vendors SET
+  name=$2,
+  email=$3,
+  phone=$4
+WHERE id = $1
+RETURNING *;
+
+-- name: DeleteVendor :exec
+DELETE FROM vendors 
+WHERE id = $1;
+
+-- name: GetVendorByUserID :one
+SELECT v.* FROM vendors v
+INNER JOIN users u ON u.vendor_id = v.id
+WHERE u.id = $1::uuid;
+
+-- name: GetVendorsByOrg :many
+SELECT * FROM vendors
+WHERE organization_id = $1
+ORDER BY created_at DESC;
+
+-- name: CreateVendorInvitation :one
+INSERT INTO vendor_invitations (
+  vendor_id,
+  email,
+  token,
+  invited_by,
+  role_id,
+  expires_at
+) VALUES (
+  $1, $2, $3, $4, $5, $6
+) RETURNING *;
+
+-- name: GetVendorInvitationByToken :one
+SELECT * FROM vendor_invitations WHERE token = $1;
+
+-- name: GetVendorInvitationsByVendor :many
+SELECT * FROM vendor_invitations WHERE vendor_id = $1 ORDER BY created_at DESC;
+
+-- name: UpdateVendorInvitationStatus :one
+UPDATE vendor_invitations SET status = $2 WHERE id = $1 RETURNING *;
