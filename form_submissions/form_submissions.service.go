@@ -212,7 +212,7 @@ func (s *formSubmissionService) ReviewSubmission(ctx context.Context, id string,
 func mapSubmissionToResponse(s repo.FormSubmission) FormSubmissionResponse {
 	var responses map[string]interface{}
 	if s.Responses != nil {
-		json.Unmarshal(s.Responses, &responses)
+		_ = json.Unmarshal(s.Responses, &responses)
 	}
 
 	return FormSubmissionResponse{

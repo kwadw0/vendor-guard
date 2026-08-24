@@ -245,12 +245,12 @@ func (s *formFieldService) DeleteField(ctx context.Context, fieldID string, user
 func mapFieldToResponse(f repo.FormField) FormFieldResponse {
 	var validation interface{}
 	if f.Validation != nil {
-		json.Unmarshal(f.Validation, &validation)
+		_ = json.Unmarshal(f.Validation, &validation)
 	}
 
 	var options interface{}
 	if f.Options != nil {
-		json.Unmarshal(f.Options, &options)
+		_ = json.Unmarshal(f.Options, &options)
 	}
 
 	return FormFieldResponse{
