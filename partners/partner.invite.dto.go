@@ -1,6 +1,6 @@
-package vendors
+package partners
 
-type InviteVendorUserDto struct {
+type InvitePartnerUserDto struct {
 	Email  string `json:"email" validate:"required,email"`
 	RoleID string `json:"role_id" validate:"required,uuid"`
 }
@@ -15,7 +15,7 @@ type AcceptInviteDto struct {
 
 type InvitationResponse struct {
 	ID        string `json:"id"`
-	VendorID  string `json:"vendor_id"`
+	PartnerID string `json:"partner_id"`
 	Email     string `json:"email"`
 	RoleID    string `json:"role_id"`
 	Status    string `json:"status"`

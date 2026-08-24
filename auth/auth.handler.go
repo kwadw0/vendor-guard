@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"vendor-guard/utils"
+	"preuvio/utils"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -32,7 +32,7 @@ func NewHandler(service AuthService, v *validator.Validate) Handler {
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		SignupDto								true	"User signup data"
-//	@Success		201		{object}	utils.SuccessResponse[TokenResponseDto]	"Signup successful"
+//	@Success		201		{object}	utils.SuccessResponse{data=auth.TokenResponseDto}	"Signup successful"
 //	@Failure		400		{object}	utils.ErrorResponse
 //	@Failure		409		{object}	utils.ErrorResponse
 //	@Failure		500		{object}	utils.ErrorResponse
@@ -70,7 +70,7 @@ func (h *handler) Signup(w http.ResponseWriter, r *http.Request) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		LoginDto								true	"User login credentials"
-//	@Success		200		{object}	utils.SuccessResponse[TokenResponseDto]	"Login successful"
+//	@Success		200		{object}	utils.SuccessResponse{data=auth.TokenResponseDto}	"Login successful"
 //	@Failure		400		{object}	utils.ErrorResponse
 //	@Failure		401		{object}	utils.ErrorResponse
 //	@Failure		500		{object}	utils.ErrorResponse
@@ -108,7 +108,7 @@ func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		RefreshTokenDto							true	"Refresh token"
-//	@Success		200		{object}	utils.SuccessResponse[TokenResponseDto]	"Token refreshed successfully"
+//	@Success		200		{object}	utils.SuccessResponse{data=auth.TokenResponseDto}	"Token refreshed successfully"
 //	@Failure		400		{object}	utils.ErrorResponse
 //	@Failure		401		{object}	utils.ErrorResponse
 //	@Failure		500		{object}	utils.ErrorResponse

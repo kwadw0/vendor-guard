@@ -7,8 +7,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 
-	appErrors "vendor-guard/internal/common"
-	"vendor-guard/utils"
+	appErrors "preuvio/internal/common"
+	"preuvio/utils"
 )
 
 type Handler interface {
@@ -36,7 +36,7 @@ func NewHandler(service UserService, v *validator.Validate) Handler {
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		CreateUserDto	true	"User creation data"
-//	@Success		201		{object}	utils.SuccessResponse[UserResponseDto]
+//	@Success		201		{object}	utils.SuccessResponse{data=users.UserResponseDto}
 //	@Failure		400		{object}	utils.ErrorResponse
 //	@Failure		500		{object}	utils.ErrorResponse
 //	@Router			/api/users [post]
@@ -68,7 +68,7 @@ func (h *handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 //	@Tags			users
 //	@Produce		json
 //	@Param			id	path		string	true	"User ID"
-//	@Success		200	{object}	utils.SuccessResponse[UserResponseDto]
+//	@Success		200	{object}	utils.SuccessResponse{data=users.UserResponseDto}
 //	@Failure		400	{object}	utils.ErrorResponse
 //	@Failure		404	{object}	utils.ErrorResponse
 //	@Failure		500	{object}	utils.ErrorResponse
@@ -99,7 +99,7 @@ func (h *handler) GetUser(w http.ResponseWriter, r *http.Request) {
 //	@Description	Retrieve a list of all users
 //	@Tags			users
 //	@Produce		json
-//	@Success		200	{object}	utils.SuccessResponse[[]UserResponseDto]
+//	@Success		200	{object}	utils.SuccessResponse{data=[]users.UserResponseDto}
 //	@Failure		500	{object}	utils.ErrorResponse
 //	@Router			/api/users [get]
 func (h *handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
@@ -121,7 +121,7 @@ func (h *handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			id		path		string			true	"User ID"
 //	@Param			request	body		UpdateUserDto	true	"Update data"
-//	@Success		200		{object}	utils.SuccessResponse[UserResponseDto]
+//	@Success		200		{object}	utils.SuccessResponse{data=users.UserResponseDto}
 //	@Failure		400		{object}	utils.ErrorResponse
 //	@Failure		404		{object}	utils.ErrorResponse
 //	@Failure		500		{object}	utils.ErrorResponse
@@ -163,7 +163,7 @@ func (h *handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 //	@Description	Delete a user by ID
 //	@Tags			users
 //	@Param			id	path		string									true	"User ID"
-//	@Success		200	{object}	utils.SuccessResponse[utils.EmptyData]	"User deleted successfully"
+//	@Success		200	{object}	utils.SuccessResponse{data=utils.EmptyData}	"User deleted successfully"
 //	@Failure		400	{object}	utils.ErrorResponse
 //	@Failure		500	{object}	utils.ErrorResponse
 //	@Router			/api/users/{id} [delete]

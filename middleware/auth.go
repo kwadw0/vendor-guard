@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	jwtutil "vendor-guard/auth/jwt"
-	"vendor-guard/utils"
+	jwtutil "preuvio/auth/jwt"
+	"preuvio/utils"
 )
 
 var errUnauthorized = errors.New("unauthorized")

@@ -10,12 +10,16 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 
-	"vendor-guard/auth"
-	"vendor-guard/internal/repo"
-	appMiddleware "vendor-guard/middleware"
-	"vendor-guard/organizations"
-	"vendor-guard/users"
-	"vendor-guard/vendors"
+	"preuvio/auth"
+	"preuvio/form_fields"
+	"preuvio/form_submissions"
+	"preuvio/form_templates"
+	"preuvio/forms"
+	"preuvio/internal/repo"
+	appMiddleware "preuvio/middleware"
+	"preuvio/organizations"
+	"preuvio/partners"
+	"preuvio/users"
 )
 
 func (app *application) run(h http.Handler) error {
@@ -78,27 +82,80 @@ func (app *application) mount() http.Handler {
 		r.Delete("/{id}", orgHandler.DeleteOrganization)
 	})
 
-	// Vendor routes
-	vendorService := vendors.NewService(repoQueries)
-	vendorHandler := vendors.NewVendorHandler(vendorService, app.validator)
+	// Partner routes
+	partnerService := partners.NewService(repoQueries)
+	partnerHandler := partners.NewPartnerHandler(partnerService, app.validator)
 
-	vendorInviteService := vendors.NewInviteService(repoQueries, app.config.jwtSecret)
-	vendorInviteHandler := vendors.NewInviteHandler(vendorInviteService, app.validator)
+	partnerInviteService := partners.NewInviteService(repoQueries, app.config.jwtSecret)
+	partnerInviteHandler := partners.NewInviteHandler(partnerInviteService, app.validator)
 
-	r.Route("/api/vendors", func(r chi.Router) {
-		r.With(authMiddleware).Post("/", vendorHandler.CreateVendor)
-		r.With(authMiddleware).Get("/", vendorHandler.GetAllVendors)
-		r.With(authMiddleware).Get("/{id}", vendorHandler.GetVendorByID)
-		r.With(authMiddleware).Put("/{id}", vendorHandler.UpdateVendor)
-		r.With(authMiddleware).Delete("/{id}", vendorHandler.DeleteVendor)
+	r.Route("/api/partners", func(r chi.Router) {
+		r.With(authMiddleware).Post("/", partnerHandler.CreatePartner)
+		r.With(authMiddleware).Get("/", partnerHandler.GetAllPartners)
+		r.With(authMiddleware).Get("/{id}", partnerHandler.GetPartnerByID)
+		r.With(authMiddleware).Put("/{id}", partnerHandler.UpdatePartner)
+		r.With(authMiddleware).Delete("/{id}", partnerHandler.DeletePartner)
 
-		// Vendor invitation routes
-		r.With(authMiddleware).Post("/{vendorId}/invite", vendorInviteHandler.InviteVendorUser)
-		r.With(authMiddleware).Get("/{vendorId}/invite", vendorInviteHandler.GetVendorInvitations)
+		// Partner invitation routes
+		r.With(authMiddleware).Post("/{partnerId}/invite", partnerInviteHandler.InvitePartnerUser)
+		r.With(authMiddleware).Get("/{partnerId}/invite", partnerInviteHandler.GetPartnerInvitations)
 	})
 
-	// Public vendor invitation acceptance
-	r.Post("/api/vendors/invite/accept", vendorInviteHandler.AcceptInvitation)
+	// Public partner invitation acceptance
+	r.Post("/api/partners/invite/accept", partnerInviteHandler.AcceptInvitation)
+
+	// Form template routes
+	formTemplateService := form_templates.NewService(repoQueries)
+	formTemplateHandler := form_templates.NewHandler(formTemplateService, app.validator)
+
+	r.Route("/api/templates", func(r chi.Router) {
+		r.Use(authMiddleware)
+		r.Post("/", formTemplateHandler.CreateTemplate)
+		r.Get("/", formTemplateHandler.GetAllTemplates)
+		r.Get("/{id}", formTemplateHandler.GetTemplateByID)
+		r.Put("/{id}", formTemplateHandler.UpdateTemplate)
+		r.Delete("/{id}", formTemplateHandler.DeleteTemplate)
+		r.Post("/{id}/clone", formTemplateHandler.CloneTemplateToForm)
+	})
+
+	// Form routes
+	formService := forms.NewService(repoQueries)
+	formHandler := forms.NewHandler(formService, app.validator)
+
+	r.Route("/api/forms", func(r chi.Router) {
+		r.Use(authMiddleware)
+		r.Post("/", formHandler.CreateForm)
+		r.Get("/", formHandler.GetFormsByOrg)
+		r.Get("/{formId}", formHandler.GetFormByID)
+		r.Put("/{formId}", formHandler.UpdateForm)
+		r.Delete("/{formId}", formHandler.DeleteForm)
+
+		// Form field routes
+		formFieldService := form_fields.NewService(repoQueries)
+		formFieldHandler := form_fields.NewHandler(formFieldService, app.validator)
+
+		r.Post("/{formId}/fields", formFieldHandler.CreateField)
+		r.Get("/{formId}/fields", formFieldHandler.GetFieldsByFormID)
+		r.Put("/{formId}/fields/{fieldId}", formFieldHandler.UpdateField)
+		r.Delete("/{formId}/fields/{fieldId}", formFieldHandler.DeleteField)
+
+		// Form submission routes
+		formSubmissionService := form_submissions.NewService(repoQueries)
+		formSubmissionHandler := form_submissions.NewHandler(formSubmissionService, app.validator)
+
+		r.Post("/{formId}/submissions", formSubmissionHandler.CreateSubmission)
+		r.Get("/{formId}/submissions", formSubmissionHandler.GetSubmissionsByFormID)
+	})
+
+	// Submission review routes (outside /api/forms for cleaner URLs)
+	formSubmissionServiceForReview := form_submissions.NewService(repoQueries)
+	formSubmissionHandlerForReview := form_submissions.NewHandler(formSubmissionServiceForReview, app.validator)
+
+	r.Route("/api/submissions", func(r chi.Router) {
+		r.Use(authMiddleware)
+		r.Get("/{id}", formSubmissionHandlerForReview.GetSubmissionByID)
+		r.Put("/{id}/review", formSubmissionHandlerForReview.ReviewSubmission)
+	})
 
 	return r
 }

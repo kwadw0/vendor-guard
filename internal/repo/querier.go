@@ -12,44 +12,79 @@ import (
 )
 
 type Querier interface {
+	CloneTemplateToForm(ctx context.Context, arg CloneTemplateToFormParams) (Form, error)
+	// ============================================================
+	// FORMS
+	// ============================================================
+	CreateForm(ctx context.Context, arg CreateFormParams) (Form, error)
+	// ============================================================
+	// FORM FIELDS
+	// ============================================================
+	CreateFormField(ctx context.Context, arg CreateFormFieldParams) (FormField, error)
+	// ============================================================
+	// FORM SUBMISSIONS
+	// ============================================================
+	CreateFormSubmission(ctx context.Context, arg CreateFormSubmissionParams) (FormSubmission, error)
+	// ============================================================
+	// FORM TEMPLATES
+	// ============================================================
+	CreateFormTemplate(ctx context.Context, arg CreateFormTemplateParams) (FormTemplate, error)
 	CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (Organization, error)
+	CreatePartnerInvitation(ctx context.Context, arg CreatePartnerInvitationParams) (PartnerInvitation, error)
+	CreatePartners(ctx context.Context, arg CreatePartnersParams) (Partner, error)
 	// ============================================================
 	// ROLES
 	// ============================================================
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
-	CreateVendorInvitation(ctx context.Context, arg CreateVendorInvitationParams) (VendorInvitation, error)
-	CreateVendors(ctx context.Context, arg CreateVendorsParams) (Vendor, error)
+	DeleteForm(ctx context.Context, id uuid.UUID) error
+	DeleteFormField(ctx context.Context, id uuid.UUID) error
+	DeleteFormTemplate(ctx context.Context, id uuid.UUID) error
 	DeleteOrganization(ctx context.Context, id uuid.UUID) error
+	DeletePartner(ctx context.Context, id uuid.UUID) error
 	DeleteRole(ctx context.Context, id uuid.UUID) (Role, error)
 	DeleteUser(ctx context.Context, id uuid.UUID) error
-	DeleteVendor(ctx context.Context, id uuid.UUID) error
+	GetAllFormTemplates(ctx context.Context) ([]FormTemplate, error)
 	GetAllOrganizations(ctx context.Context) ([]Organization, error)
-	GetAllVendors(ctx context.Context) ([]Vendor, error)
+	GetAllPartners(ctx context.Context) ([]Partner, error)
+	GetFormByID(ctx context.Context, id uuid.UUID) (Form, error)
+	GetFormFieldByID(ctx context.Context, id uuid.UUID) (FormField, error)
+	GetFormFieldsByFormID(ctx context.Context, formID uuid.UUID) ([]FormField, error)
+	GetFormFieldsBySectionID(ctx context.Context, sectionID uuid.UUID) ([]FormField, error)
+	GetFormSubmissionByID(ctx context.Context, id uuid.UUID) (FormSubmission, error)
+	GetFormSubmissionsByFormID(ctx context.Context, formID uuid.UUID) ([]FormSubmission, error)
+	GetFormSubmissionsByPartnerID(ctx context.Context, partnerID uuid.UUID) ([]FormSubmission, error)
+	GetFormTemplateByID(ctx context.Context, id uuid.UUID) (FormTemplate, error)
+	GetFormsByOrg(ctx context.Context, organizationID uuid.UUID) ([]Form, error)
 	GetOrganizationById(ctx context.Context, id uuid.UUID) (Organization, error)
 	GetOrganizationByUserID(ctx context.Context, dollar_1 uuid.UUID) (Organization, error)
+	GetPartnerById(ctx context.Context, id uuid.UUID) (Partner, error)
+	GetPartnerByUserID(ctx context.Context, dollar_1 uuid.UUID) (Partner, error)
+	GetPartnerInvitationByToken(ctx context.Context, token string) (PartnerInvitation, error)
+	GetPartnerInvitationsByPartner(ctx context.Context, partnerID uuid.UUID) ([]PartnerInvitation, error)
+	GetPartnersByOrg(ctx context.Context, organizationID uuid.UUID) ([]Partner, error)
 	GetRoleByID(ctx context.Context, id uuid.UUID) (Role, error)
 	GetRoleByName(ctx context.Context, name string) (Role, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByRefreshToken(ctx context.Context, refreshToken pgtype.Text) (User, error)
-	GetVendorById(ctx context.Context, id uuid.UUID) (Vendor, error)
-	GetVendorByUserID(ctx context.Context, dollar_1 uuid.UUID) (Vendor, error)
-	GetVendorInvitationByToken(ctx context.Context, token string) (VendorInvitation, error)
-	GetVendorInvitationsByVendor(ctx context.Context, vendorID uuid.UUID) ([]VendorInvitation, error)
-	GetVendorsByOrg(ctx context.Context, organizationID uuid.UUID) ([]Vendor, error)
 	ListRoles(ctx context.Context) ([]Role, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
+	ReviewFormSubmission(ctx context.Context, arg ReviewFormSubmissionParams) (FormSubmission, error)
 	RevokeRefreshToken(ctx context.Context, id uuid.UUID) error
+	UpdateForm(ctx context.Context, arg UpdateFormParams) (Form, error)
+	UpdateFormField(ctx context.Context, arg UpdateFormFieldParams) (FormField, error)
+	UpdateFormSubmission(ctx context.Context, arg UpdateFormSubmissionParams) (FormSubmission, error)
+	UpdateFormTemplate(ctx context.Context, arg UpdateFormTemplateParams) (FormTemplate, error)
 	UpdateOrganization(ctx context.Context, arg UpdateOrganizationParams) (Organization, error)
+	UpdatePartner(ctx context.Context, arg UpdatePartnerParams) (Partner, error)
+	UpdatePartnerInvitationStatus(ctx context.Context, arg UpdatePartnerInvitationStatusParams) (PartnerInvitation, error)
 	UpdateRole(ctx context.Context, arg UpdateRoleParams) (Role, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpdateUserOrganization(ctx context.Context, arg UpdateUserOrganizationParams) (User, error)
+	UpdateUserPartner(ctx context.Context, arg UpdateUserPartnerParams) (User, error)
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (User, error)
 	UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefreshTokenParams) (User, error)
-	UpdateUserVendor(ctx context.Context, arg UpdateUserVendorParams) (User, error)
-	UpdateVendor(ctx context.Context, arg UpdateVendorParams) (Vendor, error)
-	UpdateVendorInvitationStatus(ctx context.Context, arg UpdateVendorInvitationStatusParams) (VendorInvitation, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
-	"vendor-guard/middleware"
-	"vendor-guard/utils"
+	"preuvio/middleware"
+	"preuvio/utils"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
@@ -29,7 +29,7 @@ func NewOrganizationHandler(service OrganizationService, validate *validator.Val
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		CreateOrganizationDto	true	"Organization data"
-//	@Success		201		{object}	utils.SuccessResponse[OrganizationResponseDto]
+//	@Success		201		{object}	utils.SuccessResponse{data=organizations.OrganizationResponseDto}
 //	@Failure		400		{object}	utils.ErrorResponse
 //	@Failure		401		{object}	utils.ErrorResponse
 //	@Failure		500		{object}	utils.ErrorResponse
@@ -68,7 +68,7 @@ func (h *OrganizationHandler) CreateOrganization(w http.ResponseWriter, r *http.
 //	@Description	Returns the organization the authenticated user belongs to. Requires Bearer token.
 //	@Tags			organizations
 //	@Produce		json
-//	@Success		200	{object}	utils.SuccessResponse[OrganizationResponseDto]
+//	@Success		200	{object}	utils.SuccessResponse{data=organizations.OrganizationResponseDto}
 //	@Failure		401	{object}	utils.ErrorResponse
 //	@Failure		404	{object}	utils.ErrorResponse
 //	@Security		BearerAuth
@@ -100,7 +100,7 @@ func (h *OrganizationHandler) GetOrganizationByUserID(w http.ResponseWriter, r *
 //	@Tags			organizations
 //	@Produce		json
 //	@Param			id	path		string	true	"Organization ID"
-//	@Success		200	{object}	utils.SuccessResponse[OrganizationResponseDto]
+//	@Success		200	{object}	utils.SuccessResponse{data=organizations.OrganizationResponseDto}
 //	@Failure		400	{object}	utils.ErrorResponse
 //	@Failure		404	{object}	utils.ErrorResponse
 //	@Router			/api/organizations/{id} [get]
@@ -130,7 +130,7 @@ func (h *OrganizationHandler) GetOrganizationById(w http.ResponseWriter, r *http
 //	@Description	Retrieve a list of all organizations
 //	@Tags			organizations
 //	@Produce		json
-//	@Success		200	{object}	utils.SuccessResponse[[]OrganizationResponseDto]
+//	@Success		200	{object}	utils.SuccessResponse{data=[]organizations.OrganizationResponseDto}
 //	@Failure		500	{object}	utils.ErrorResponse
 //	@Router			/api/organizations [get]
 func (h *OrganizationHandler) GetAllOrganizations(w http.ResponseWriter, r *http.Request) {
@@ -151,7 +151,7 @@ func (h *OrganizationHandler) GetAllOrganizations(w http.ResponseWriter, r *http
 //	@Produce		json
 //	@Param			id		path		string					true	"Organization ID"
 //	@Param			request	body		UpdateOrganizationDto	true	"Updated organization data"
-//	@Success		200		{object}	utils.SuccessResponse[OrganizationResponseDto]
+//	@Success		200		{object}	utils.SuccessResponse{data=organizations.OrganizationResponseDto}
 //	@Failure		400		{object}	utils.ErrorResponse
 //	@Failure		500		{object}	utils.ErrorResponse
 //	@Router			/api/organizations/{id} [put]
@@ -189,7 +189,7 @@ func (h *OrganizationHandler) UpdateOrganization(w http.ResponseWriter, r *http.
 //	@Tags			organizations
 //	@Produce		json
 //	@Param			id	path		string	true	"Organization ID"
-//	@Success		200	{object}	utils.SuccessResponse[utils.EmptyData]
+//	@Success		200	{object}	utils.SuccessResponse{data=utils.EmptyData}
 //	@Failure		400	{object}	utils.ErrorResponse
 //	@Failure		500	{object}	utils.ErrorResponse
 //	@Router			/api/organizations/{id} [delete]

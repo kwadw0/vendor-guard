@@ -1,19 +1,19 @@
-package vendors
+package partners
 
-type CreateVendorDto struct {
+type CreatePartnerDto struct {
 	Name  string `json:"name" validate:"required,min=2,max=255"`
 	Email string `json:"email" validate:"omitempty,email,max=255"`
 	Phone string `json:"phone" validate:"omitempty,max=255"`
 }
 
-type UpdateVendorDto struct {
+type UpdatePartnerDto struct {
 	ID    string
 	Name  string `json:"name" validate:"required,min=2,max=255"`
 	Email string `json:"email" validate:"omitempty,email,max=255"`
 	Phone string `json:"phone" validate:"omitempty,max=255"`
 }
 
-type VendorResponse struct {
+type PartnerResponse struct {
 	ID             string `json:"id"`
 	OrganizationID string `json:"organization_id"`
 

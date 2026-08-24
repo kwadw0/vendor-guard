@@ -1,4 +1,4 @@
-package vendors
+package partners
 
 import (
 	"context"
@@ -7,9 +7,9 @@ import (
 	"errors"
 	"time"
 
-	"vendor-guard/auth/jwt"
-	"vendor-guard/internal/repo"
-	"vendor-guard/utils"
+	"preuvio/auth/jwt"
+	"preuvio/internal/repo"
+	"preuvio/utils"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -19,14 +19,14 @@ var (
 	ErrInvitationNotFound    = errors.New("invitation not found or expired")
 	ErrInvitationExpired     = errors.New("invitation has expired")
 	ErrInvitationAlreadyUsed = errors.New("invitation already accepted")
-	ErrVendorMismatch        = errors.New("vendor does not belong to your organization")
-	ErrVendorUserExists      = errors.New("a user with this email already belongs to an organization")
+	ErrPartnerMismatch       = errors.New("partner does not belong to your organization")
+	ErrPartnerUserExists     = errors.New("a user with this email already belongs to an organization")
 )
 
 type InviteService interface {
-	InviteUser(ctx context.Context, vendorID, invitedByUserID string, dto InviteVendorUserDto) (InvitationResponse, error)
+	InviteUser(ctx context.Context, partnerID, invitedByUserID string, dto InvitePartnerUserDto) (InvitationResponse, error)
 	AcceptInvitation(ctx context.Context, dto AcceptInviteDto) (*TokenResponse, error)
-	GetInvitationsByVendor(ctx context.Context, vendorID, userID string) ([]InvitationResponse, error)
+	GetInvitationsByPartner(ctx context.Context, partnerID, userID string) ([]InvitationResponse, error)
 }
 
 type inviteService struct {
@@ -46,8 +46,8 @@ func generateToken() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-func (s *inviteService) InviteUser(ctx context.Context, vendorID, invitedByUserID string, dto InviteVendorUserDto) (InvitationResponse, error) {
-	vendorUUID, err := uuid.Parse(vendorID)
+func (s *inviteService) InviteUser(ctx context.Context, partnerID, invitedByUserID string, dto InvitePartnerUserDto) (InvitationResponse, error) {
+	partnerUUID, err := uuid.Parse(partnerID)
 	if err != nil {
 		return InvitationResponse{}, err
 	}
@@ -62,19 +62,19 @@ func (s *inviteService) InviteUser(ctx context.Context, vendorID, invitedByUserI
 		return InvitationResponse{}, err
 	}
 
-	// Verify the inviter belongs to the vendor's organization
+	// Verify the inviter belongs to the partner's organization
 	inviterOrg, err := s.repo.GetOrganizationByUserID(ctx, invitedByUUID)
 	if err != nil {
-		return InvitationResponse{}, errors.New("only organization members can invite vendor users")
+		return InvitationResponse{}, errors.New("only organization members can invite partner users")
 	}
 
-	vendor, err := s.repo.GetVendorById(ctx, vendorUUID)
+	partner, err := s.repo.GetPartnerById(ctx, partnerUUID)
 	if err != nil {
-		return InvitationResponse{}, ErrVendorMismatch
+		return InvitationResponse{}, ErrPartnerMismatch
 	}
 
-	if vendor.OrganizationID != inviterOrg.ID {
-		return InvitationResponse{}, ErrVendorMismatch
+	if partner.OrganizationID != inviterOrg.ID {
+		return InvitationResponse{}, ErrPartnerMismatch
 	}
 
 	token, err := generateToken()
@@ -84,8 +84,8 @@ func (s *inviteService) InviteUser(ctx context.Context, vendorID, invitedByUserI
 
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 
-	invitation, err := s.repo.CreateVendorInvitation(ctx, repo.CreateVendorInvitationParams{
-		VendorID:  vendorUUID,
+	invitation, err := s.repo.CreatePartnerInvitation(ctx, repo.CreatePartnerInvitationParams{
+		PartnerID: partnerUUID,
 		Email:     dto.Email,
 		Token:     token,
 		InvitedBy: invitedByUUID,
@@ -99,7 +99,7 @@ func (s *inviteService) InviteUser(ctx context.Context, vendorID, invitedByUserI
 }
 
 func (s *inviteService) AcceptInvitation(ctx context.Context, dto AcceptInviteDto) (*TokenResponse, error) {
-	invitation, err := s.repo.GetVendorInvitationByToken(ctx, dto.Token)
+	invitation, err := s.repo.GetPartnerInvitationByToken(ctx, dto.Token)
 	if err != nil {
 		return nil, ErrInvitationNotFound
 	}
@@ -112,7 +112,7 @@ func (s *inviteService) AcceptInvitation(ctx context.Context, dto AcceptInviteDt
 	}
 
 	if invitation.ExpiresAt.Time.Before(time.Now()) {
-		_, _ = s.repo.UpdateVendorInvitationStatus(ctx, repo.UpdateVendorInvitationStatusParams{
+		_, _ = s.repo.UpdatePartnerInvitationStatus(ctx, repo.UpdatePartnerInvitationStatusParams{
 			ID:     invitation.ID,
 			Status: "expired",
 		})
@@ -123,10 +123,10 @@ func (s *inviteService) AcceptInvitation(ctx context.Context, dto AcceptInviteDt
 	existingUser, err := s.repo.GetUserByEmail(ctx, invitation.Email)
 	if err == nil {
 		if existingUser.OrganizationID.Valid {
-			return nil, ErrVendorUserExists
+			return nil, ErrPartnerUserExists
 		}
-		if existingUser.VendorID.Valid {
-			return nil, errors.New("a user with this email already belongs to a vendor")
+		if existingUser.PartnerID.Valid {
+			return nil, errors.New("a user with this email already belongs to a partner")
 		}
 	}
 
@@ -137,13 +137,13 @@ func (s *inviteService) AcceptInvitation(ctx context.Context, dto AcceptInviteDt
 
 	var user repo.User
 
-	vendorUUID := pgtype.UUID{Bytes: invitation.VendorID, Valid: true}
+	partnerUUID := pgtype.UUID{Bytes: invitation.PartnerID, Valid: true}
 
 	if existingUser.ID != uuid.Nil {
-		// Link existing user to vendor
-		user, err = s.repo.UpdateUserVendor(ctx, repo.UpdateUserVendorParams{
-			ID:       existingUser.ID,
-			VendorID: vendorUUID,
+		// Link existing user to partner
+		user, err = s.repo.UpdateUserPartner(ctx, repo.UpdateUserPartnerParams{
+			ID:        existingUser.ID,
+			PartnerID: partnerUUID,
 		})
 		if err != nil {
 			return nil, err
@@ -161,10 +161,10 @@ func (s *inviteService) AcceptInvitation(ctx context.Context, dto AcceptInviteDt
 		if err != nil {
 			return nil, err
 		}
-		// Link user to vendor
-		user, err = s.repo.UpdateUserVendor(ctx, repo.UpdateUserVendorParams{
-			ID:       user.ID,
-			VendorID: vendorUUID,
+		// Link user to partner
+		user, err = s.repo.UpdateUserPartner(ctx, repo.UpdateUserPartnerParams{
+			ID:        user.ID,
+			PartnerID: partnerUUID,
 		})
 		if err != nil {
 			return nil, err
@@ -172,7 +172,7 @@ func (s *inviteService) AcceptInvitation(ctx context.Context, dto AcceptInviteDt
 	}
 
 	// Mark invitation as accepted
-	_, err = s.repo.UpdateVendorInvitationStatus(ctx, repo.UpdateVendorInvitationStatusParams{
+	_, err = s.repo.UpdatePartnerInvitationStatus(ctx, repo.UpdatePartnerInvitationStatusParams{
 		ID:     invitation.ID,
 		Status: "accepted",
 	})
@@ -208,8 +208,8 @@ func (s *inviteService) AcceptInvitation(ctx context.Context, dto AcceptInviteDt
 	}, nil
 }
 
-func (s *inviteService) GetInvitationsByVendor(ctx context.Context, vendorID, userID string) ([]InvitationResponse, error) {
-	vendorUUID, err := uuid.Parse(vendorID)
+func (s *inviteService) GetInvitationsByPartner(ctx context.Context, partnerID, userID string) ([]InvitationResponse, error) {
+	partnerUUID, err := uuid.Parse(partnerID)
 	if err != nil {
 		return nil, err
 	}
@@ -224,16 +224,16 @@ func (s *inviteService) GetInvitationsByVendor(ctx context.Context, vendorID, us
 		return nil, ErrAccessDenied
 	}
 
-	vendor, err := s.repo.GetVendorById(ctx, vendorUUID)
+	partner, err := s.repo.GetPartnerById(ctx, partnerUUID)
 	if err != nil {
 		return nil, err
 	}
 
-	if vendor.OrganizationID != org.ID {
+	if partner.OrganizationID != org.ID {
 		return nil, ErrAccessDenied
 	}
 
-	invitations, err := s.repo.GetVendorInvitationsByVendor(ctx, vendorUUID)
+	invitations, err := s.repo.GetPartnerInvitationsByPartner(ctx, partnerUUID)
 	if err != nil {
 		return nil, err
 	}
@@ -245,10 +245,10 @@ func (s *inviteService) GetInvitationsByVendor(ctx context.Context, vendorID, us
 	return response, nil
 }
 
-func mapInvitationToResponse(inv repo.VendorInvitation) InvitationResponse {
+func mapInvitationToResponse(inv repo.PartnerInvitation) InvitationResponse {
 	return InvitationResponse{
 		ID:        inv.ID.String(),
-		VendorID:  inv.VendorID.String(),
+		PartnerID: inv.PartnerID.String(),
 		Email:     inv.Email,
 		RoleID:    inv.RoleID.String(),
 		Status:    inv.Status,

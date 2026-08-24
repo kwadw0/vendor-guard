@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"vendor-guard/internal/repo"
+	"preuvio/internal/repo"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"

@@ -93,7 +93,7 @@ create table "users" (
   "password"        varchar(255) not null,
   "phone"           varchar(255) not null unique,
   "organization_id"  uuid         null references organizations(id),
-  "vendor_id"        uuid         null,
+  "partner_id"       uuid         null,
   "role_id"         uuid         not null references roles(id),
   "avatar_url"      varchar(255) null,
   "is_active"       boolean      not null default true,
@@ -114,7 +114,7 @@ create trigger trg_users_updated_at
   for each row execute function set_updated_at();
 
 
-CREATE TABLE vendors (
+CREATE TABLE partners (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id),
 
@@ -128,16 +128,16 @@ CREATE TABLE vendors (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-create index idx_vendors_email          on "vendors"("email");
-CREATE INDEX idx_vendors_org_id         on "vendors"("organization_id");
+create index idx_partners_email          on "partners"("email");
+CREATE INDEX idx_partners_org_id         on "partners"("organization_id");
 
-create trigger trg_vendors_updated_at
-  before update on "vendors"
+create trigger trg_partners_updated_at
+  before update on "partners"
   for each row execute function set_updated_at();
 
-CREATE TABLE vendor_invitations (
+CREATE TABLE partner_invitations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    vendor_id UUID NOT NULL,
+    partner_id UUID NOT NULL,
     email VARCHAR(255) NOT NULL,
     token VARCHAR(255) NOT NULL UNIQUE,
     invited_by UUID NOT NULL,
@@ -148,6 +148,6 @@ CREATE TABLE vendor_invitations (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_vendor_invitations_vendor_id ON vendor_invitations(vendor_id);
-CREATE INDEX idx_vendor_invitations_email ON vendor_invitations(email);
-CREATE INDEX idx_vendor_invitations_token ON vendor_invitations(token);
+CREATE INDEX idx_partner_invitations_partner_id ON partner_invitations(partner_id);
+CREATE INDEX idx_partner_invitations_email ON partner_invitations(email);
+CREATE INDEX idx_partner_invitations_token ON partner_invitations(token);

@@ -1,4 +1,4 @@
-module vendor-guard
+module preuvio
 
 go 1.26.2
 

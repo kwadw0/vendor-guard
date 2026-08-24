@@ -12,48 +12,110 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type VendorStatus string
+type PartnerStatus string
 
 const (
-	VendorStatusPending   VendorStatus = "pending"
-	VendorStatusActive    VendorStatus = "active"
-	VendorStatusInactive  VendorStatus = "inactive"
-	VendorStatusSuspended VendorStatus = "suspended"
+	PartnerStatusPending   PartnerStatus = "pending"
+	PartnerStatusActive    PartnerStatus = "active"
+	PartnerStatusInactive  PartnerStatus = "inactive"
+	PartnerStatusSuspended PartnerStatus = "suspended"
 )
 
-func (e *VendorStatus) Scan(src interface{}) error {
+func (e *PartnerStatus) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = VendorStatus(s)
+		*e = PartnerStatus(s)
 	case string:
-		*e = VendorStatus(s)
+		*e = PartnerStatus(s)
 	default:
-		return fmt.Errorf("unsupported scan type for VendorStatus: %T", src)
+		return fmt.Errorf("unsupported scan type for PartnerStatus: %T", src)
 	}
 	return nil
 }
 
-type NullVendorStatus struct {
-	VendorStatus VendorStatus `json:"vendor_status"`
-	Valid        bool         `json:"valid"` // Valid is true if VendorStatus is not NULL
+type NullPartnerStatus struct {
+	PartnerStatus PartnerStatus `json:"partner_status"`
+	Valid         bool          `json:"valid"` // Valid is true if PartnerStatus is not NULL
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullVendorStatus) Scan(value interface{}) error {
+func (ns *NullPartnerStatus) Scan(value interface{}) error {
 	if value == nil {
-		ns.VendorStatus, ns.Valid = "", false
+		ns.PartnerStatus, ns.Valid = "", false
 		return nil
 	}
 	ns.Valid = true
-	return ns.VendorStatus.Scan(value)
+	return ns.PartnerStatus.Scan(value)
 }
 
 // Value implements the driver Valuer interface.
-func (ns NullVendorStatus) Value() (driver.Value, error) {
+func (ns NullPartnerStatus) Value() (driver.Value, error) {
 	if !ns.Valid {
 		return nil, nil
 	}
-	return string(ns.VendorStatus), nil
+	return string(ns.PartnerStatus), nil
+}
+
+type Form struct {
+	ID             uuid.UUID          `json:"id"`
+	OrganizationID uuid.UUID          `json:"organization_id"`
+	TemplateID     pgtype.UUID        `json:"template_id"`
+	Title          string             `json:"title"`
+	Description    pgtype.Text        `json:"description"`
+	Status         string             `json:"status"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type FormField struct {
+	ID          uuid.UUID          `json:"id"`
+	FormID      uuid.UUID          `json:"form_id"`
+	SectionID   uuid.UUID          `json:"section_id"`
+	FieldType   string             `json:"field_type"`
+	Label       string             `json:"label"`
+	Key         string             `json:"key"`
+	Description pgtype.Text        `json:"description"`
+	Placeholder pgtype.Text        `json:"placeholder"`
+	IsRequired  bool               `json:"is_required"`
+	SortOrder   int32              `json:"sort_order"`
+	Validation  []byte             `json:"validation"`
+	Options     []byte             `json:"options"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type FormSection struct {
+	ID          uuid.UUID          `json:"id"`
+	FormID      uuid.UUID          `json:"form_id"`
+	Title       string             `json:"title"`
+	Description pgtype.Text        `json:"description"`
+	SortOrder   int32              `json:"sort_order"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type FormSubmission struct {
+	ID          uuid.UUID          `json:"id"`
+	FormID      uuid.UUID          `json:"form_id"`
+	PartnerID   uuid.UUID          `json:"partner_id"`
+	SubmittedBy pgtype.UUID        `json:"submitted_by"`
+	Status      string             `json:"status"`
+	Responses   []byte             `json:"responses"`
+	SubmittedAt pgtype.Timestamptz `json:"submitted_at"`
+	ReviewedAt  pgtype.Timestamptz `json:"reviewed_at"`
+	ReviewedBy  pgtype.UUID        `json:"reviewed_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type FormTemplate struct {
+	ID          uuid.UUID          `json:"id"`
+	Title       string             `json:"title"`
+	Description pgtype.Text        `json:"description"`
+	Category    pgtype.Text        `json:"category"`
+	IsActive    bool               `json:"is_active"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Organization struct {
@@ -68,6 +130,30 @@ type Organization struct {
 	IsActive            bool               `json:"is_active"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Partner struct {
+	ID             uuid.UUID          `json:"id"`
+	OrganizationID uuid.UUID          `json:"organization_id"`
+	Name           string             `json:"name"`
+	Email          string             `json:"email"`
+	Phone          pgtype.Text        `json:"phone"`
+	Status         NullPartnerStatus  `json:"status"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type PartnerInvitation struct {
+	ID        uuid.UUID          `json:"id"`
+	PartnerID uuid.UUID          `json:"partner_id"`
+	Email     string             `json:"email"`
+	Token     string             `json:"token"`
+	InvitedBy uuid.UUID          `json:"invited_by"`
+	RoleID    uuid.UUID          `json:"role_id"`
+	Status    string             `json:"status"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Role struct {
@@ -95,29 +181,5 @@ type User struct {
 	RefreshTokenExpiresAt pgtype.Timestamptz `json:"refresh_token_expires_at"`
 	CreatedAt             pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
-	VendorID              pgtype.UUID        `json:"vendor_id"`
-}
-
-type Vendor struct {
-	ID             uuid.UUID          `json:"id"`
-	OrganizationID uuid.UUID          `json:"organization_id"`
-	Name           string             `json:"name"`
-	Email          string             `json:"email"`
-	Phone          pgtype.Text        `json:"phone"`
-	Status         NullVendorStatus   `json:"status"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
-}
-
-type VendorInvitation struct {
-	ID        uuid.UUID          `json:"id"`
-	VendorID  uuid.UUID          `json:"vendor_id"`
-	Email     string             `json:"email"`
-	Token     string             `json:"token"`
-	InvitedBy uuid.UUID          `json:"invited_by"`
-	RoleID    uuid.UUID          `json:"role_id"`
-	Status    string             `json:"status"`
-	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	PartnerID             pgtype.UUID        `json:"partner_id"`
 }

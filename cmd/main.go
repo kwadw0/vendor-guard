@@ -9,12 +9,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
-	_ "vendor-guard/docs"
+	_ "preuvio/docs"
 )
 
-// @title			Vendor Guard API
+// @title			Preuvio API
 // @version		1.0
-// @description	This is a sample server for Vendor Guard.
+// @description	This is a sample server for Preuvio.
 // @termsOfService	http://swagger.io/terms/
 // @contact.name	API Support
 // @contact.url	http://www.swagger.io/support

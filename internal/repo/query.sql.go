@@ -12,6 +12,271 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const cloneTemplateToForm = `-- name: CloneTemplateToForm :one
+INSERT INTO forms (
+  organization_id,
+  template_id,
+  title,
+  description,
+  status
+)
+SELECT
+  $1,
+  $2,
+  $3,
+  ft.description,
+  'draft'
+FROM form_templates ft
+WHERE ft.id = $2
+RETURNING id, organization_id, template_id, title, description, status, created_at, updated_at
+`
+
+type CloneTemplateToFormParams struct {
+	OrganizationID uuid.UUID   `json:"organization_id"`
+	TemplateID     pgtype.UUID `json:"template_id"`
+	Title          string      `json:"title"`
+}
+
+func (q *Queries) CloneTemplateToForm(ctx context.Context, arg CloneTemplateToFormParams) (Form, error) {
+	row := q.db.QueryRow(ctx, cloneTemplateToForm, arg.OrganizationID, arg.TemplateID, arg.Title)
+	var i Form
+	err := row.Scan(
+		&i.ID,
+		&i.OrganizationID,
+		&i.TemplateID,
+		&i.Title,
+		&i.Description,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createForm = `-- name: CreateForm :one
+
+INSERT INTO forms (
+  organization_id,
+  template_id,
+  title,
+  description,
+  status
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  $5
+) RETURNING id, organization_id, template_id, title, description, status, created_at, updated_at
+`
+
+type CreateFormParams struct {
+	OrganizationID uuid.UUID   `json:"organization_id"`
+	TemplateID     pgtype.UUID `json:"template_id"`
+	Title          string      `json:"title"`
+	Description    pgtype.Text `json:"description"`
+	Status         string      `json:"status"`
+}
+
+// ============================================================
+// FORMS
+// ============================================================
+func (q *Queries) CreateForm(ctx context.Context, arg CreateFormParams) (Form, error) {
+	row := q.db.QueryRow(ctx, createForm,
+		arg.OrganizationID,
+		arg.TemplateID,
+		arg.Title,
+		arg.Description,
+		arg.Status,
+	)
+	var i Form
+	err := row.Scan(
+		&i.ID,
+		&i.OrganizationID,
+		&i.TemplateID,
+		&i.Title,
+		&i.Description,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createFormField = `-- name: CreateFormField :one
+
+INSERT INTO form_fields (
+  form_id,
+  section_id,
+  field_type,
+  label,
+  key,
+  description,
+  placeholder,
+  is_required,
+  sort_order,
+  validation,
+  options
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  $5,
+  $6,
+  $7,
+  $8,
+  $9,
+  $10,
+  $11
+) RETURNING id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at
+`
+
+type CreateFormFieldParams struct {
+	FormID      uuid.UUID   `json:"form_id"`
+	SectionID   uuid.UUID   `json:"section_id"`
+	FieldType   string      `json:"field_type"`
+	Label       string      `json:"label"`
+	Key         string      `json:"key"`
+	Description pgtype.Text `json:"description"`
+	Placeholder pgtype.Text `json:"placeholder"`
+	IsRequired  bool        `json:"is_required"`
+	SortOrder   int32       `json:"sort_order"`
+	Validation  []byte      `json:"validation"`
+	Options     []byte      `json:"options"`
+}
+
+// ============================================================
+// FORM FIELDS
+// ============================================================
+func (q *Queries) CreateFormField(ctx context.Context, arg CreateFormFieldParams) (FormField, error) {
+	row := q.db.QueryRow(ctx, createFormField,
+		arg.FormID,
+		arg.SectionID,
+		arg.FieldType,
+		arg.Label,
+		arg.Key,
+		arg.Description,
+		arg.Placeholder,
+		arg.IsRequired,
+		arg.SortOrder,
+		arg.Validation,
+		arg.Options,
+	)
+	var i FormField
+	err := row.Scan(
+		&i.ID,
+		&i.FormID,
+		&i.SectionID,
+		&i.FieldType,
+		&i.Label,
+		&i.Key,
+		&i.Description,
+		&i.Placeholder,
+		&i.IsRequired,
+		&i.SortOrder,
+		&i.Validation,
+		&i.Options,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createFormSubmission = `-- name: CreateFormSubmission :one
+
+INSERT INTO form_submissions (
+  form_id,
+  partner_id,
+  submitted_by,
+  status,
+  responses,
+  submitted_at
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  $5,
+  $6
+) RETURNING id, form_id, partner_id, submitted_by, status, responses, submitted_at, reviewed_at, reviewed_by, created_at, updated_at
+`
+
+type CreateFormSubmissionParams struct {
+	FormID      uuid.UUID          `json:"form_id"`
+	PartnerID   uuid.UUID          `json:"partner_id"`
+	SubmittedBy pgtype.UUID        `json:"submitted_by"`
+	Status      string             `json:"status"`
+	Responses   []byte             `json:"responses"`
+	SubmittedAt pgtype.Timestamptz `json:"submitted_at"`
+}
+
+// ============================================================
+// FORM SUBMISSIONS
+// ============================================================
+func (q *Queries) CreateFormSubmission(ctx context.Context, arg CreateFormSubmissionParams) (FormSubmission, error) {
+	row := q.db.QueryRow(ctx, createFormSubmission,
+		arg.FormID,
+		arg.PartnerID,
+		arg.SubmittedBy,
+		arg.Status,
+		arg.Responses,
+		arg.SubmittedAt,
+	)
+	var i FormSubmission
+	err := row.Scan(
+		&i.ID,
+		&i.FormID,
+		&i.PartnerID,
+		&i.SubmittedBy,
+		&i.Status,
+		&i.Responses,
+		&i.SubmittedAt,
+		&i.ReviewedAt,
+		&i.ReviewedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createFormTemplate = `-- name: CreateFormTemplate :one
+
+INSERT INTO form_templates (
+  title,
+  description,
+  category
+) VALUES (
+  $1,
+  $2,
+  $3
+) RETURNING id, title, description, category, is_active, created_at, updated_at
+`
+
+type CreateFormTemplateParams struct {
+	Title       string      `json:"title"`
+	Description pgtype.Text `json:"description"`
+	Category    pgtype.Text `json:"category"`
+}
+
+// ============================================================
+// FORM TEMPLATES
+// ============================================================
+func (q *Queries) CreateFormTemplate(ctx context.Context, arg CreateFormTemplateParams) (FormTemplate, error) {
+	row := q.db.QueryRow(ctx, createFormTemplate, arg.Title, arg.Description, arg.Category)
+	var i FormTemplate
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.Category,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const createOrganization = `-- name: CreateOrganization :one
 INSERT INTO organizations (
   name,
@@ -69,6 +334,95 @@ func (q *Queries) CreateOrganization(ctx context.Context, arg CreateOrganization
 	return i, err
 }
 
+const createPartnerInvitation = `-- name: CreatePartnerInvitation :one
+INSERT INTO partner_invitations (
+  partner_id,
+  email,
+  token,
+  invited_by,
+  role_id,
+  expires_at
+) VALUES (
+  $1, $2, $3, $4, $5, $6
+) RETURNING id, partner_id, email, token, invited_by, role_id, status, expires_at, created_at, updated_at
+`
+
+type CreatePartnerInvitationParams struct {
+	PartnerID uuid.UUID          `json:"partner_id"`
+	Email     string             `json:"email"`
+	Token     string             `json:"token"`
+	InvitedBy uuid.UUID          `json:"invited_by"`
+	RoleID    uuid.UUID          `json:"role_id"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+}
+
+func (q *Queries) CreatePartnerInvitation(ctx context.Context, arg CreatePartnerInvitationParams) (PartnerInvitation, error) {
+	row := q.db.QueryRow(ctx, createPartnerInvitation,
+		arg.PartnerID,
+		arg.Email,
+		arg.Token,
+		arg.InvitedBy,
+		arg.RoleID,
+		arg.ExpiresAt,
+	)
+	var i PartnerInvitation
+	err := row.Scan(
+		&i.ID,
+		&i.PartnerID,
+		&i.Email,
+		&i.Token,
+		&i.InvitedBy,
+		&i.RoleID,
+		&i.Status,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createPartners = `-- name: CreatePartners :one
+INSERT INTO partners (
+  organization_id,
+  name,
+  email,
+  phone
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4
+) RETURNING id, organization_id, name, email, phone, status, created_at, updated_at
+`
+
+type CreatePartnersParams struct {
+	OrganizationID uuid.UUID   `json:"organization_id"`
+	Name           string      `json:"name"`
+	Email          string      `json:"email"`
+	Phone          pgtype.Text `json:"phone"`
+}
+
+func (q *Queries) CreatePartners(ctx context.Context, arg CreatePartnersParams) (Partner, error) {
+	row := q.db.QueryRow(ctx, createPartners,
+		arg.OrganizationID,
+		arg.Name,
+		arg.Email,
+		arg.Phone,
+	)
+	var i Partner
+	err := row.Scan(
+		&i.ID,
+		&i.OrganizationID,
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const createRole = `-- name: CreateRole :one
 
 INSERT INTO roles (
@@ -118,7 +472,7 @@ INSERT INTO users (
   $5,
   $6,
   $7
-) RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id
+) RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, partner_id
 `
 
 type CreateUserParams struct {
@@ -159,98 +513,36 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.RefreshTokenExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.VendorID,
+		&i.PartnerID,
 	)
 	return i, err
 }
 
-const createVendorInvitation = `-- name: CreateVendorInvitation :one
-INSERT INTO vendor_invitations (
-  vendor_id,
-  email,
-  token,
-  invited_by,
-  role_id,
-  expires_at
-) VALUES (
-  $1, $2, $3, $4, $5, $6
-) RETURNING id, vendor_id, email, token, invited_by, role_id, status, expires_at, created_at, updated_at
+const deleteForm = `-- name: DeleteForm :exec
+DELETE FROM forms WHERE id = $1
 `
 
-type CreateVendorInvitationParams struct {
-	VendorID  uuid.UUID          `json:"vendor_id"`
-	Email     string             `json:"email"`
-	Token     string             `json:"token"`
-	InvitedBy uuid.UUID          `json:"invited_by"`
-	RoleID    uuid.UUID          `json:"role_id"`
-	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+func (q *Queries) DeleteForm(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteForm, id)
+	return err
 }
 
-func (q *Queries) CreateVendorInvitation(ctx context.Context, arg CreateVendorInvitationParams) (VendorInvitation, error) {
-	row := q.db.QueryRow(ctx, createVendorInvitation,
-		arg.VendorID,
-		arg.Email,
-		arg.Token,
-		arg.InvitedBy,
-		arg.RoleID,
-		arg.ExpiresAt,
-	)
-	var i VendorInvitation
-	err := row.Scan(
-		&i.ID,
-		&i.VendorID,
-		&i.Email,
-		&i.Token,
-		&i.InvitedBy,
-		&i.RoleID,
-		&i.Status,
-		&i.ExpiresAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const createVendors = `-- name: CreateVendors :one
-INSERT INTO vendors (
-  organization_id,
-  name,
-  email,
-  phone
-) VALUES (
-  $1,
-  $2,
-  $3,
-  $4
-) RETURNING id, organization_id, name, email, phone, status, created_at, updated_at
+const deleteFormField = `-- name: DeleteFormField :exec
+DELETE FROM form_fields WHERE id = $1
 `
 
-type CreateVendorsParams struct {
-	OrganizationID uuid.UUID   `json:"organization_id"`
-	Name           string      `json:"name"`
-	Email          string      `json:"email"`
-	Phone          pgtype.Text `json:"phone"`
+func (q *Queries) DeleteFormField(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteFormField, id)
+	return err
 }
 
-func (q *Queries) CreateVendors(ctx context.Context, arg CreateVendorsParams) (Vendor, error) {
-	row := q.db.QueryRow(ctx, createVendors,
-		arg.OrganizationID,
-		arg.Name,
-		arg.Email,
-		arg.Phone,
-	)
-	var i Vendor
-	err := row.Scan(
-		&i.ID,
-		&i.OrganizationID,
-		&i.Name,
-		&i.Email,
-		&i.Phone,
-		&i.Status,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
+const deleteFormTemplate = `-- name: DeleteFormTemplate :exec
+DELETE FROM form_templates WHERE id = $1
+`
+
+func (q *Queries) DeleteFormTemplate(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteFormTemplate, id)
+	return err
 }
 
 const deleteOrganization = `-- name: DeleteOrganization :exec
@@ -259,6 +551,16 @@ DELETE FROM organizations WHERE id = $1
 
 func (q *Queries) DeleteOrganization(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, deleteOrganization, id)
+	return err
+}
+
+const deletePartner = `-- name: DeletePartner :exec
+DELETE FROM partners 
+WHERE id = $1
+`
+
+func (q *Queries) DeletePartner(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deletePartner, id)
 	return err
 }
 
@@ -289,14 +591,38 @@ func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-const deleteVendor = `-- name: DeleteVendor :exec
-DELETE FROM vendors 
-WHERE id = $1
+const getAllFormTemplates = `-- name: GetAllFormTemplates :many
+SELECT id, title, description, category, is_active, created_at, updated_at FROM form_templates
+WHERE is_active = true
+ORDER BY created_at DESC
 `
 
-func (q *Queries) DeleteVendor(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteVendor, id)
-	return err
+func (q *Queries) GetAllFormTemplates(ctx context.Context) ([]FormTemplate, error) {
+	rows, err := q.db.Query(ctx, getAllFormTemplates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FormTemplate
+	for rows.Next() {
+		var i FormTemplate
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Description,
+			&i.Category,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getAllOrganizations = `-- name: GetAllOrganizations :many
@@ -335,26 +661,307 @@ func (q *Queries) GetAllOrganizations(ctx context.Context) ([]Organization, erro
 	return items, nil
 }
 
-const getAllVendors = `-- name: GetAllVendors :many
-SELECT id, organization_id, name, email, phone, status, created_at, updated_at FROM vendors
+const getAllPartners = `-- name: GetAllPartners :many
+SELECT id, organization_id, name, email, phone, status, created_at, updated_at FROM partners
 ORDER BY created_at DESC
 `
 
-func (q *Queries) GetAllVendors(ctx context.Context) ([]Vendor, error) {
-	rows, err := q.db.Query(ctx, getAllVendors)
+func (q *Queries) GetAllPartners(ctx context.Context) ([]Partner, error) {
+	rows, err := q.db.Query(ctx, getAllPartners)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Vendor
+	var items []Partner
 	for rows.Next() {
-		var i Vendor
+		var i Partner
 		if err := rows.Scan(
 			&i.ID,
 			&i.OrganizationID,
 			&i.Name,
 			&i.Email,
 			&i.Phone,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getFormByID = `-- name: GetFormByID :one
+SELECT id, organization_id, template_id, title, description, status, created_at, updated_at FROM forms WHERE id = $1
+`
+
+func (q *Queries) GetFormByID(ctx context.Context, id uuid.UUID) (Form, error) {
+	row := q.db.QueryRow(ctx, getFormByID, id)
+	var i Form
+	err := row.Scan(
+		&i.ID,
+		&i.OrganizationID,
+		&i.TemplateID,
+		&i.Title,
+		&i.Description,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getFormFieldByID = `-- name: GetFormFieldByID :one
+SELECT id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at FROM form_fields WHERE id = $1
+`
+
+func (q *Queries) GetFormFieldByID(ctx context.Context, id uuid.UUID) (FormField, error) {
+	row := q.db.QueryRow(ctx, getFormFieldByID, id)
+	var i FormField
+	err := row.Scan(
+		&i.ID,
+		&i.FormID,
+		&i.SectionID,
+		&i.FieldType,
+		&i.Label,
+		&i.Key,
+		&i.Description,
+		&i.Placeholder,
+		&i.IsRequired,
+		&i.SortOrder,
+		&i.Validation,
+		&i.Options,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getFormFieldsByFormID = `-- name: GetFormFieldsByFormID :many
+SELECT id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at FROM form_fields
+WHERE form_id = $1
+ORDER BY sort_order ASC
+`
+
+func (q *Queries) GetFormFieldsByFormID(ctx context.Context, formID uuid.UUID) ([]FormField, error) {
+	rows, err := q.db.Query(ctx, getFormFieldsByFormID, formID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FormField
+	for rows.Next() {
+		var i FormField
+		if err := rows.Scan(
+			&i.ID,
+			&i.FormID,
+			&i.SectionID,
+			&i.FieldType,
+			&i.Label,
+			&i.Key,
+			&i.Description,
+			&i.Placeholder,
+			&i.IsRequired,
+			&i.SortOrder,
+			&i.Validation,
+			&i.Options,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getFormFieldsBySectionID = `-- name: GetFormFieldsBySectionID :many
+SELECT id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at FROM form_fields
+WHERE section_id = $1
+ORDER BY sort_order ASC
+`
+
+func (q *Queries) GetFormFieldsBySectionID(ctx context.Context, sectionID uuid.UUID) ([]FormField, error) {
+	rows, err := q.db.Query(ctx, getFormFieldsBySectionID, sectionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FormField
+	for rows.Next() {
+		var i FormField
+		if err := rows.Scan(
+			&i.ID,
+			&i.FormID,
+			&i.SectionID,
+			&i.FieldType,
+			&i.Label,
+			&i.Key,
+			&i.Description,
+			&i.Placeholder,
+			&i.IsRequired,
+			&i.SortOrder,
+			&i.Validation,
+			&i.Options,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getFormSubmissionByID = `-- name: GetFormSubmissionByID :one
+SELECT id, form_id, partner_id, submitted_by, status, responses, submitted_at, reviewed_at, reviewed_by, created_at, updated_at FROM form_submissions WHERE id = $1
+`
+
+func (q *Queries) GetFormSubmissionByID(ctx context.Context, id uuid.UUID) (FormSubmission, error) {
+	row := q.db.QueryRow(ctx, getFormSubmissionByID, id)
+	var i FormSubmission
+	err := row.Scan(
+		&i.ID,
+		&i.FormID,
+		&i.PartnerID,
+		&i.SubmittedBy,
+		&i.Status,
+		&i.Responses,
+		&i.SubmittedAt,
+		&i.ReviewedAt,
+		&i.ReviewedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getFormSubmissionsByFormID = `-- name: GetFormSubmissionsByFormID :many
+SELECT id, form_id, partner_id, submitted_by, status, responses, submitted_at, reviewed_at, reviewed_by, created_at, updated_at FROM form_submissions
+WHERE form_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetFormSubmissionsByFormID(ctx context.Context, formID uuid.UUID) ([]FormSubmission, error) {
+	rows, err := q.db.Query(ctx, getFormSubmissionsByFormID, formID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FormSubmission
+	for rows.Next() {
+		var i FormSubmission
+		if err := rows.Scan(
+			&i.ID,
+			&i.FormID,
+			&i.PartnerID,
+			&i.SubmittedBy,
+			&i.Status,
+			&i.Responses,
+			&i.SubmittedAt,
+			&i.ReviewedAt,
+			&i.ReviewedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getFormSubmissionsByPartnerID = `-- name: GetFormSubmissionsByPartnerID :many
+SELECT id, form_id, partner_id, submitted_by, status, responses, submitted_at, reviewed_at, reviewed_by, created_at, updated_at FROM form_submissions
+WHERE partner_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetFormSubmissionsByPartnerID(ctx context.Context, partnerID uuid.UUID) ([]FormSubmission, error) {
+	rows, err := q.db.Query(ctx, getFormSubmissionsByPartnerID, partnerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FormSubmission
+	for rows.Next() {
+		var i FormSubmission
+		if err := rows.Scan(
+			&i.ID,
+			&i.FormID,
+			&i.PartnerID,
+			&i.SubmittedBy,
+			&i.Status,
+			&i.Responses,
+			&i.SubmittedAt,
+			&i.ReviewedAt,
+			&i.ReviewedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getFormTemplateByID = `-- name: GetFormTemplateByID :one
+SELECT id, title, description, category, is_active, created_at, updated_at FROM form_templates WHERE id = $1
+`
+
+func (q *Queries) GetFormTemplateByID(ctx context.Context, id uuid.UUID) (FormTemplate, error) {
+	row := q.db.QueryRow(ctx, getFormTemplateByID, id)
+	var i FormTemplate
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.Category,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getFormsByOrg = `-- name: GetFormsByOrg :many
+SELECT id, organization_id, template_id, title, description, status, created_at, updated_at FROM forms
+WHERE organization_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetFormsByOrg(ctx context.Context, organizationID uuid.UUID) ([]Form, error) {
+	rows, err := q.db.Query(ctx, getFormsByOrg, organizationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Form
+	for rows.Next() {
+		var i Form
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrganizationID,
+			&i.TemplateID,
+			&i.Title,
+			&i.Description,
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -417,6 +1024,140 @@ func (q *Queries) GetOrganizationByUserID(ctx context.Context, dollar_1 uuid.UUI
 	return i, err
 }
 
+const getPartnerById = `-- name: GetPartnerById :one
+SELECT id, organization_id, name, email, phone, status, created_at, updated_at FROM partners WHERE id = $1
+`
+
+func (q *Queries) GetPartnerById(ctx context.Context, id uuid.UUID) (Partner, error) {
+	row := q.db.QueryRow(ctx, getPartnerById, id)
+	var i Partner
+	err := row.Scan(
+		&i.ID,
+		&i.OrganizationID,
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getPartnerByUserID = `-- name: GetPartnerByUserID :one
+SELECT p.id, p.organization_id, p.name, p.email, p.phone, p.status, p.created_at, p.updated_at FROM partners p
+INNER JOIN users u ON u.partner_id = p.id
+WHERE u.id = $1::uuid
+`
+
+func (q *Queries) GetPartnerByUserID(ctx context.Context, dollar_1 uuid.UUID) (Partner, error) {
+	row := q.db.QueryRow(ctx, getPartnerByUserID, dollar_1)
+	var i Partner
+	err := row.Scan(
+		&i.ID,
+		&i.OrganizationID,
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getPartnerInvitationByToken = `-- name: GetPartnerInvitationByToken :one
+SELECT id, partner_id, email, token, invited_by, role_id, status, expires_at, created_at, updated_at FROM partner_invitations WHERE token = $1
+`
+
+func (q *Queries) GetPartnerInvitationByToken(ctx context.Context, token string) (PartnerInvitation, error) {
+	row := q.db.QueryRow(ctx, getPartnerInvitationByToken, token)
+	var i PartnerInvitation
+	err := row.Scan(
+		&i.ID,
+		&i.PartnerID,
+		&i.Email,
+		&i.Token,
+		&i.InvitedBy,
+		&i.RoleID,
+		&i.Status,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getPartnerInvitationsByPartner = `-- name: GetPartnerInvitationsByPartner :many
+SELECT id, partner_id, email, token, invited_by, role_id, status, expires_at, created_at, updated_at FROM partner_invitations WHERE partner_id = $1 ORDER BY created_at DESC
+`
+
+func (q *Queries) GetPartnerInvitationsByPartner(ctx context.Context, partnerID uuid.UUID) ([]PartnerInvitation, error) {
+	rows, err := q.db.Query(ctx, getPartnerInvitationsByPartner, partnerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []PartnerInvitation
+	for rows.Next() {
+		var i PartnerInvitation
+		if err := rows.Scan(
+			&i.ID,
+			&i.PartnerID,
+			&i.Email,
+			&i.Token,
+			&i.InvitedBy,
+			&i.RoleID,
+			&i.Status,
+			&i.ExpiresAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPartnersByOrg = `-- name: GetPartnersByOrg :many
+SELECT id, organization_id, name, email, phone, status, created_at, updated_at FROM partners
+WHERE organization_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetPartnersByOrg(ctx context.Context, organizationID uuid.UUID) ([]Partner, error) {
+	rows, err := q.db.Query(ctx, getPartnersByOrg, organizationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Partner
+	for rows.Next() {
+		var i Partner
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrganizationID,
+			&i.Name,
+			&i.Email,
+			&i.Phone,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getRoleByID = `-- name: GetRoleByID :one
 SELECT id, name, description, created_at, updated_at FROM roles WHERE id = $1
 `
@@ -452,7 +1193,7 @@ func (q *Queries) GetRoleByName(ctx context.Context, name string) (Role, error) 
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id FROM users WHERE email = $1
+SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, partner_id FROM users WHERE email = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -475,13 +1216,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.RefreshTokenExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.VendorID,
+		&i.PartnerID,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id FROM users WHERE id = $1
+SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, partner_id FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
@@ -504,13 +1245,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.RefreshTokenExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.VendorID,
+		&i.PartnerID,
 	)
 	return i, err
 }
 
 const getUserByRefreshToken = `-- name: GetUserByRefreshToken :one
-SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id FROM users
+SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, partner_id FROM users
 WHERE refresh_token = $1
   AND refresh_token_expires_at > now()
 `
@@ -535,143 +1276,9 @@ func (q *Queries) GetUserByRefreshToken(ctx context.Context, refreshToken pgtype
 		&i.RefreshTokenExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.VendorID,
+		&i.PartnerID,
 	)
 	return i, err
-}
-
-const getVendorById = `-- name: GetVendorById :one
-SELECT id, organization_id, name, email, phone, status, created_at, updated_at FROM vendors WHERE id = $1
-`
-
-func (q *Queries) GetVendorById(ctx context.Context, id uuid.UUID) (Vendor, error) {
-	row := q.db.QueryRow(ctx, getVendorById, id)
-	var i Vendor
-	err := row.Scan(
-		&i.ID,
-		&i.OrganizationID,
-		&i.Name,
-		&i.Email,
-		&i.Phone,
-		&i.Status,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const getVendorByUserID = `-- name: GetVendorByUserID :one
-SELECT v.id, v.organization_id, v.name, v.email, v.phone, v.status, v.created_at, v.updated_at FROM vendors v
-INNER JOIN users u ON u.vendor_id = v.id
-WHERE u.id = $1::uuid
-`
-
-func (q *Queries) GetVendorByUserID(ctx context.Context, dollar_1 uuid.UUID) (Vendor, error) {
-	row := q.db.QueryRow(ctx, getVendorByUserID, dollar_1)
-	var i Vendor
-	err := row.Scan(
-		&i.ID,
-		&i.OrganizationID,
-		&i.Name,
-		&i.Email,
-		&i.Phone,
-		&i.Status,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const getVendorInvitationByToken = `-- name: GetVendorInvitationByToken :one
-SELECT id, vendor_id, email, token, invited_by, role_id, status, expires_at, created_at, updated_at FROM vendor_invitations WHERE token = $1
-`
-
-func (q *Queries) GetVendorInvitationByToken(ctx context.Context, token string) (VendorInvitation, error) {
-	row := q.db.QueryRow(ctx, getVendorInvitationByToken, token)
-	var i VendorInvitation
-	err := row.Scan(
-		&i.ID,
-		&i.VendorID,
-		&i.Email,
-		&i.Token,
-		&i.InvitedBy,
-		&i.RoleID,
-		&i.Status,
-		&i.ExpiresAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const getVendorInvitationsByVendor = `-- name: GetVendorInvitationsByVendor :many
-SELECT id, vendor_id, email, token, invited_by, role_id, status, expires_at, created_at, updated_at FROM vendor_invitations WHERE vendor_id = $1 ORDER BY created_at DESC
-`
-
-func (q *Queries) GetVendorInvitationsByVendor(ctx context.Context, vendorID uuid.UUID) ([]VendorInvitation, error) {
-	rows, err := q.db.Query(ctx, getVendorInvitationsByVendor, vendorID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []VendorInvitation
-	for rows.Next() {
-		var i VendorInvitation
-		if err := rows.Scan(
-			&i.ID,
-			&i.VendorID,
-			&i.Email,
-			&i.Token,
-			&i.InvitedBy,
-			&i.RoleID,
-			&i.Status,
-			&i.ExpiresAt,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getVendorsByOrg = `-- name: GetVendorsByOrg :many
-SELECT id, organization_id, name, email, phone, status, created_at, updated_at FROM vendors
-WHERE organization_id = $1
-ORDER BY created_at DESC
-`
-
-func (q *Queries) GetVendorsByOrg(ctx context.Context, organizationID uuid.UUID) ([]Vendor, error) {
-	rows, err := q.db.Query(ctx, getVendorsByOrg, organizationID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Vendor
-	for rows.Next() {
-		var i Vendor
-		if err := rows.Scan(
-			&i.ID,
-			&i.OrganizationID,
-			&i.Name,
-			&i.Email,
-			&i.Phone,
-			&i.Status,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const listRoles = `-- name: ListRoles :many
@@ -705,7 +1312,7 @@ func (q *Queries) ListRoles(ctx context.Context) ([]Role, error) {
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id
+SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, partner_id
 FROM users
 ORDER BY created_at DESC
 LIMIT $1
@@ -743,7 +1350,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.RefreshTokenExpiresAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.VendorID,
+			&i.PartnerID,
 		); err != nil {
 			return nil, err
 		}
@@ -753,6 +1360,40 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 		return nil, err
 	}
 	return items, nil
+}
+
+const reviewFormSubmission = `-- name: ReviewFormSubmission :one
+UPDATE form_submissions SET
+  status = $2,
+  reviewed_by = $3,
+  reviewed_at = now()
+WHERE id = $1
+RETURNING id, form_id, partner_id, submitted_by, status, responses, submitted_at, reviewed_at, reviewed_by, created_at, updated_at
+`
+
+type ReviewFormSubmissionParams struct {
+	ID         uuid.UUID   `json:"id"`
+	Status     string      `json:"status"`
+	ReviewedBy pgtype.UUID `json:"reviewed_by"`
+}
+
+func (q *Queries) ReviewFormSubmission(ctx context.Context, arg ReviewFormSubmissionParams) (FormSubmission, error) {
+	row := q.db.QueryRow(ctx, reviewFormSubmission, arg.ID, arg.Status, arg.ReviewedBy)
+	var i FormSubmission
+	err := row.Scan(
+		&i.ID,
+		&i.FormID,
+		&i.PartnerID,
+		&i.SubmittedBy,
+		&i.Status,
+		&i.Responses,
+		&i.SubmittedAt,
+		&i.ReviewedAt,
+		&i.ReviewedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const revokeRefreshToken = `-- name: RevokeRefreshToken :exec
@@ -765,6 +1406,176 @@ WHERE id = $1
 func (q *Queries) RevokeRefreshToken(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, revokeRefreshToken, id)
 	return err
+}
+
+const updateForm = `-- name: UpdateForm :one
+UPDATE forms SET
+  title = $2,
+  description = $3,
+  status = $4
+WHERE id = $1
+RETURNING id, organization_id, template_id, title, description, status, created_at, updated_at
+`
+
+type UpdateFormParams struct {
+	ID          uuid.UUID   `json:"id"`
+	Title       string      `json:"title"`
+	Description pgtype.Text `json:"description"`
+	Status      string      `json:"status"`
+}
+
+func (q *Queries) UpdateForm(ctx context.Context, arg UpdateFormParams) (Form, error) {
+	row := q.db.QueryRow(ctx, updateForm,
+		arg.ID,
+		arg.Title,
+		arg.Description,
+		arg.Status,
+	)
+	var i Form
+	err := row.Scan(
+		&i.ID,
+		&i.OrganizationID,
+		&i.TemplateID,
+		&i.Title,
+		&i.Description,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateFormField = `-- name: UpdateFormField :one
+UPDATE form_fields SET
+  field_type = $2,
+  label = $3,
+  key = $4,
+  description = $5,
+  placeholder = $6,
+  is_required = $7,
+  sort_order = $8,
+  validation = $9,
+  options = $10
+WHERE id = $1
+RETURNING id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at
+`
+
+type UpdateFormFieldParams struct {
+	ID          uuid.UUID   `json:"id"`
+	FieldType   string      `json:"field_type"`
+	Label       string      `json:"label"`
+	Key         string      `json:"key"`
+	Description pgtype.Text `json:"description"`
+	Placeholder pgtype.Text `json:"placeholder"`
+	IsRequired  bool        `json:"is_required"`
+	SortOrder   int32       `json:"sort_order"`
+	Validation  []byte      `json:"validation"`
+	Options     []byte      `json:"options"`
+}
+
+func (q *Queries) UpdateFormField(ctx context.Context, arg UpdateFormFieldParams) (FormField, error) {
+	row := q.db.QueryRow(ctx, updateFormField,
+		arg.ID,
+		arg.FieldType,
+		arg.Label,
+		arg.Key,
+		arg.Description,
+		arg.Placeholder,
+		arg.IsRequired,
+		arg.SortOrder,
+		arg.Validation,
+		arg.Options,
+	)
+	var i FormField
+	err := row.Scan(
+		&i.ID,
+		&i.FormID,
+		&i.SectionID,
+		&i.FieldType,
+		&i.Label,
+		&i.Key,
+		&i.Description,
+		&i.Placeholder,
+		&i.IsRequired,
+		&i.SortOrder,
+		&i.Validation,
+		&i.Options,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateFormSubmission = `-- name: UpdateFormSubmission :one
+UPDATE form_submissions SET
+  status = $2,
+  responses = $3
+WHERE id = $1
+RETURNING id, form_id, partner_id, submitted_by, status, responses, submitted_at, reviewed_at, reviewed_by, created_at, updated_at
+`
+
+type UpdateFormSubmissionParams struct {
+	ID        uuid.UUID `json:"id"`
+	Status    string    `json:"status"`
+	Responses []byte    `json:"responses"`
+}
+
+func (q *Queries) UpdateFormSubmission(ctx context.Context, arg UpdateFormSubmissionParams) (FormSubmission, error) {
+	row := q.db.QueryRow(ctx, updateFormSubmission, arg.ID, arg.Status, arg.Responses)
+	var i FormSubmission
+	err := row.Scan(
+		&i.ID,
+		&i.FormID,
+		&i.PartnerID,
+		&i.SubmittedBy,
+		&i.Status,
+		&i.Responses,
+		&i.SubmittedAt,
+		&i.ReviewedAt,
+		&i.ReviewedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateFormTemplate = `-- name: UpdateFormTemplate :one
+UPDATE form_templates SET
+  title = $2,
+  description = $3,
+  category = $4,
+  is_active = $5
+WHERE id = $1
+RETURNING id, title, description, category, is_active, created_at, updated_at
+`
+
+type UpdateFormTemplateParams struct {
+	ID          uuid.UUID   `json:"id"`
+	Title       string      `json:"title"`
+	Description pgtype.Text `json:"description"`
+	Category    pgtype.Text `json:"category"`
+	IsActive    bool        `json:"is_active"`
+}
+
+func (q *Queries) UpdateFormTemplate(ctx context.Context, arg UpdateFormTemplateParams) (FormTemplate, error) {
+	row := q.db.QueryRow(ctx, updateFormTemplate,
+		arg.ID,
+		arg.Title,
+		arg.Description,
+		arg.Category,
+		arg.IsActive,
+	)
+	var i FormTemplate
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.Category,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const updateOrganization = `-- name: UpdateOrganization :one
@@ -819,6 +1630,71 @@ func (q *Queries) UpdateOrganization(ctx context.Context, arg UpdateOrganization
 	return i, err
 }
 
+const updatePartner = `-- name: UpdatePartner :one
+
+UPDATE partners SET
+  name=$2,
+  email=$3,
+  phone=$4
+WHERE id = $1
+RETURNING id, organization_id, name, email, phone, status, created_at, updated_at
+`
+
+type UpdatePartnerParams struct {
+	ID    uuid.UUID   `json:"id"`
+	Name  string      `json:"name"`
+	Email string      `json:"email"`
+	Phone pgtype.Text `json:"phone"`
+}
+
+func (q *Queries) UpdatePartner(ctx context.Context, arg UpdatePartnerParams) (Partner, error) {
+	row := q.db.QueryRow(ctx, updatePartner,
+		arg.ID,
+		arg.Name,
+		arg.Email,
+		arg.Phone,
+	)
+	var i Partner
+	err := row.Scan(
+		&i.ID,
+		&i.OrganizationID,
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updatePartnerInvitationStatus = `-- name: UpdatePartnerInvitationStatus :one
+UPDATE partner_invitations SET status = $2 WHERE id = $1 RETURNING id, partner_id, email, token, invited_by, role_id, status, expires_at, created_at, updated_at
+`
+
+type UpdatePartnerInvitationStatusParams struct {
+	ID     uuid.UUID `json:"id"`
+	Status string    `json:"status"`
+}
+
+func (q *Queries) UpdatePartnerInvitationStatus(ctx context.Context, arg UpdatePartnerInvitationStatusParams) (PartnerInvitation, error) {
+	row := q.db.QueryRow(ctx, updatePartnerInvitationStatus, arg.ID, arg.Status)
+	var i PartnerInvitation
+	err := row.Scan(
+		&i.ID,
+		&i.PartnerID,
+		&i.Email,
+		&i.Token,
+		&i.InvitedBy,
+		&i.RoleID,
+		&i.Status,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateRole = `-- name: UpdateRole :one
 UPDATE roles SET
   name = $2,
@@ -854,7 +1730,7 @@ UPDATE users SET
   role_id = $6,
   avatar_url = $7
 WHERE id = $1
-RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id
+RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, partner_id
 `
 
 type UpdateUserParams struct {
@@ -895,7 +1771,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.RefreshTokenExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.VendorID,
+		&i.PartnerID,
 	)
 	return i, err
 }
@@ -903,7 +1779,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 const updateUserOrganization = `-- name: UpdateUserOrganization :one
 UPDATE users SET
   organization_id = $2
-WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id
+WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, partner_id
 `
 
 type UpdateUserOrganizationParams struct {
@@ -931,7 +1807,43 @@ func (q *Queries) UpdateUserOrganization(ctx context.Context, arg UpdateUserOrga
 		&i.RefreshTokenExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.VendorID,
+		&i.PartnerID,
+	)
+	return i, err
+}
+
+const updateUserPartner = `-- name: UpdateUserPartner :one
+UPDATE users SET
+  partner_id = $2
+WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, partner_id
+`
+
+type UpdateUserPartnerParams struct {
+	ID        uuid.UUID   `json:"id"`
+	PartnerID pgtype.UUID `json:"partner_id"`
+}
+
+func (q *Queries) UpdateUserPartner(ctx context.Context, arg UpdateUserPartnerParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserPartner, arg.ID, arg.PartnerID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Email,
+		&i.Password,
+		&i.Phone,
+		&i.OrganizationID,
+		&i.RoleID,
+		&i.AvatarUrl,
+		&i.IsActive,
+		&i.EmailVerified,
+		&i.PhoneVerified,
+		&i.RefreshToken,
+		&i.RefreshTokenExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.PartnerID,
 	)
 	return i, err
 }
@@ -940,7 +1852,7 @@ const updateUserPassword = `-- name: UpdateUserPassword :one
 UPDATE users SET
   password = $2
 WHERE id = $1
-RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id
+RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, partner_id
 `
 
 type UpdateUserPasswordParams struct {
@@ -968,7 +1880,7 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPassword
 		&i.RefreshTokenExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.VendorID,
+		&i.PartnerID,
 	)
 	return i, err
 }
@@ -977,7 +1889,7 @@ const updateUserRefreshToken = `-- name: UpdateUserRefreshToken :one
 UPDATE users SET
   refresh_token = $2,
   refresh_token_expires_at = $3
-WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id
+WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, partner_id
 `
 
 type UpdateUserRefreshTokenParams struct {
@@ -1006,108 +1918,7 @@ func (q *Queries) UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefr
 		&i.RefreshTokenExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.VendorID,
-	)
-	return i, err
-}
-
-const updateUserVendor = `-- name: UpdateUserVendor :one
-UPDATE users SET
-  vendor_id = $2
-WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, vendor_id
-`
-
-type UpdateUserVendorParams struct {
-	ID       uuid.UUID   `json:"id"`
-	VendorID pgtype.UUID `json:"vendor_id"`
-}
-
-func (q *Queries) UpdateUserVendor(ctx context.Context, arg UpdateUserVendorParams) (User, error) {
-	row := q.db.QueryRow(ctx, updateUserVendor, arg.ID, arg.VendorID)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.FirstName,
-		&i.LastName,
-		&i.Email,
-		&i.Password,
-		&i.Phone,
-		&i.OrganizationID,
-		&i.RoleID,
-		&i.AvatarUrl,
-		&i.IsActive,
-		&i.EmailVerified,
-		&i.PhoneVerified,
-		&i.RefreshToken,
-		&i.RefreshTokenExpiresAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.VendorID,
-	)
-	return i, err
-}
-
-const updateVendor = `-- name: UpdateVendor :one
-
-UPDATE vendors SET
-  name=$2,
-  email=$3,
-  phone=$4
-WHERE id = $1
-RETURNING id, organization_id, name, email, phone, status, created_at, updated_at
-`
-
-type UpdateVendorParams struct {
-	ID    uuid.UUID   `json:"id"`
-	Name  string      `json:"name"`
-	Email string      `json:"email"`
-	Phone pgtype.Text `json:"phone"`
-}
-
-func (q *Queries) UpdateVendor(ctx context.Context, arg UpdateVendorParams) (Vendor, error) {
-	row := q.db.QueryRow(ctx, updateVendor,
-		arg.ID,
-		arg.Name,
-		arg.Email,
-		arg.Phone,
-	)
-	var i Vendor
-	err := row.Scan(
-		&i.ID,
-		&i.OrganizationID,
-		&i.Name,
-		&i.Email,
-		&i.Phone,
-		&i.Status,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const updateVendorInvitationStatus = `-- name: UpdateVendorInvitationStatus :one
-UPDATE vendor_invitations SET status = $2 WHERE id = $1 RETURNING id, vendor_id, email, token, invited_by, role_id, status, expires_at, created_at, updated_at
-`
-
-type UpdateVendorInvitationStatusParams struct {
-	ID     uuid.UUID `json:"id"`
-	Status string    `json:"status"`
-}
-
-func (q *Queries) UpdateVendorInvitationStatus(ctx context.Context, arg UpdateVendorInvitationStatusParams) (VendorInvitation, error) {
-	row := q.db.QueryRow(ctx, updateVendorInvitationStatus, arg.ID, arg.Status)
-	var i VendorInvitation
-	err := row.Scan(
-		&i.ID,
-		&i.VendorID,
-		&i.Email,
-		&i.Token,
-		&i.InvitedBy,
-		&i.RoleID,
-		&i.Status,
-		&i.ExpiresAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
+		&i.PartnerID,
 	)
 	return i, err
 }

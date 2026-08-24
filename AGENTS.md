@@ -1,4 +1,4 @@
-# Vendor Guard — Agent Guide
+# Preuvio — Agent Guide
 
 ## Code Standards
 - Prioritize **clean, idiomatic Go** and **efficiency** in all changes — clear naming, small focused functions, minimal allocations, no dead code or unnecessary abstraction
@@ -11,7 +11,7 @@
 - No test files exist, no CI/CD, no Docker, no DI framework (manual wiring in `cmd/api.go`)
 
 ## Commands
-- `go build ./cmd` — build binary
+- `go build -o preuvio ./cmd` — build binary
 - `air` — hot reload (config: `.air.toml`)
 - `sqlc generate` — regenerate `internal/repo/` from `internal/sqlc/query.sql` + `internal/migrations/`
 - `swag init` — regenerate `docs/` (Swagger spec) from handler annotations — run this after any endpoint change
@@ -19,10 +19,10 @@
 
 ## Architecture
 - **3-layer per domain**: handler (HTTP/validation) → service (business logic) → repo (sqlc-generated)
-- Domains: `auth/`, `users/`, `organizations/`, `vendors/` — each with `*.handler.go`, `*.service.go`, `*.dto.go`
+- Domains: `auth/`, `users/`, `organizations/`, `partners/` — each with `*.handler.go`, `*.service.go`, `*.dto.go`
 - JWT internals live in `auth/jwt/` (separate from middleware)
 - Router assembled at `cmd/api.go:mount()` — all dependency injection happens here
-- `go-chi` subrouters: no auth on `/api/users` or `/api/auth`, bearer required on `/api/organizations` (POST, GET /me) and all `/api/vendors`
+- `go-chi` subrouters: no auth on `/api/users` or `/api/auth`, bearer required on `/api/organizations` (POST, GET /me) and all `/api/partners`
 
 ## API Documentation
 - All endpoints must carry swag/Swagger annotations (`@Summary`, `@Router`, `@Param`, `@Success`, `@Failure`, etc.) directly above the handler function
@@ -52,4 +52,4 @@
 ## Route protection quirks
 - Org GET by ID, PUT, DELETE are **public** (no bearer)
 - All user routes are **public**
-- All vendor routes require bearer
+- All partner routes require bearer

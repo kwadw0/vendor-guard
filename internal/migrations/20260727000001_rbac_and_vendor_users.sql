@@ -7,15 +7,15 @@ INSERT INTO roles (name, description) VALUES
   ('manager', 'Can manage resources across the platform'),
   ('viewer', 'Read-only access across assigned domains');
 
--- Add vendor_id to users (nullable FK)
--- A user with vendor_id is a vendor user; mutually exclusive with organization_id
-ALTER TABLE users ADD COLUMN vendor_id UUID REFERENCES vendors(id) ON DELETE SET NULL;
-CREATE INDEX idx_users_vendor_id ON users(vendor_id);
+-- Add partner_id to users (nullable FK)
+-- A user with partner_id is a partner user; mutually exclusive with organization_id
+ALTER TABLE users ADD COLUMN partner_id UUID REFERENCES partners(id) ON DELETE SET NULL;
+CREATE INDEX idx_users_partner_id ON users(partner_id);
 
--- Vendor invitations table
-CREATE TABLE vendor_invitations (
+-- Partner invitations table
+CREATE TABLE partner_invitations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    vendor_id UUID NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+    partner_id UUID NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
     email VARCHAR(255) NOT NULL,
     token VARCHAR(255) NOT NULL UNIQUE,
     invited_by UUID NOT NULL REFERENCES users(id),
@@ -26,22 +26,22 @@ CREATE TABLE vendor_invitations (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_vendor_invitations_vendor_id ON vendor_invitations(vendor_id);
-CREATE INDEX idx_vendor_invitations_email ON vendor_invitations(email);
-CREATE INDEX idx_vendor_invitations_token ON vendor_invitations(token);
+CREATE INDEX idx_partner_invitations_partner_id ON partner_invitations(partner_id);
+CREATE INDEX idx_partner_invitations_email ON partner_invitations(email);
+CREATE INDEX idx_partner_invitations_token ON partner_invitations(token);
 
-CREATE TRIGGER trg_vendor_invitations_updated_at
-  BEFORE UPDATE ON vendor_invitations
+CREATE TRIGGER trg_partner_invitations_updated_at
+  BEFORE UPDATE ON partner_invitations
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TRIGGER IF EXISTS trg_vendor_invitations_updated_at ON vendor_invitations;
-DROP TABLE IF EXISTS vendor_invitations CASCADE;
-DROP INDEX IF EXISTS idx_users_vendor_id;
-ALTER TABLE users DROP COLUMN IF EXISTS vendor_id;
+DROP TRIGGER IF EXISTS trg_partner_invitations_updated_at ON partner_invitations;
+DROP TABLE IF EXISTS partner_invitations CASCADE;
+DROP INDEX IF EXISTS idx_users_partner_id;
+ALTER TABLE users DROP COLUMN IF EXISTS partner_id;
 DELETE FROM roles WHERE name IN ('manager', 'viewer');
 SELECT 'down SQL query';
 -- +goose StatementEnd

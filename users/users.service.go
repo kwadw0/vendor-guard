@@ -2,9 +2,9 @@ package users
 
 import (
 	"context"
-	appErrors "vendor-guard/internal/common"
-	"vendor-guard/internal/repo"
-	"vendor-guard/utils"
+	appErrors "preuvio/internal/common"
+	"preuvio/internal/repo"
+	"preuvio/utils"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"

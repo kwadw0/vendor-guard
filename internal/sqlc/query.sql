@@ -56,9 +56,9 @@ UPDATE users SET
   organization_id = $2
 WHERE id = $1 RETURNING *;
 
--- name: UpdateUserVendor :one
+-- name: UpdateUserPartner :one
 UPDATE users SET
-  vendor_id = $2
+  partner_id = $2
 WHERE id = $1 RETURNING *;
 
 -- name: UpdateUserRefreshToken :one
@@ -156,15 +156,15 @@ UPDATE organizations SET
 -- name: DeleteOrganization :exec
 DELETE FROM organizations WHERE id = $1;
 
--- name: GetVendorById :one
-SELECT * FROM vendors WHERE id = $1;
+-- name: GetPartnerById :one
+SELECT * FROM partners WHERE id = $1;
 
--- name: GetAllVendors :many
-SELECT * FROM vendors
+-- name: GetAllPartners :many
+SELECT * FROM partners
 ORDER BY created_at DESC;
 
--- name: CreateVendors :one 
-INSERT INTO vendors (
+-- name: CreatePartners :one 
+INSERT INTO partners (
   organization_id,
   name,
   email,
@@ -176,32 +176,32 @@ INSERT INTO vendors (
   $4
 ) RETURNING *;
 
--- name: UpdateVendor :one
+-- name: UpdatePartner :one
 
-UPDATE vendors SET
+UPDATE partners SET
   name=$2,
   email=$3,
   phone=$4
 WHERE id = $1
 RETURNING *;
 
--- name: DeleteVendor :exec
-DELETE FROM vendors 
+-- name: DeletePartner :exec
+DELETE FROM partners 
 WHERE id = $1;
 
--- name: GetVendorByUserID :one
-SELECT v.* FROM vendors v
-INNER JOIN users u ON u.vendor_id = v.id
+-- name: GetPartnerByUserID :one
+SELECT p.* FROM partners p
+INNER JOIN users u ON u.partner_id = p.id
 WHERE u.id = $1::uuid;
 
--- name: GetVendorsByOrg :many
-SELECT * FROM vendors
+-- name: GetPartnersByOrg :many
+SELECT * FROM partners
 WHERE organization_id = $1
 ORDER BY created_at DESC;
 
--- name: CreateVendorInvitation :one
-INSERT INTO vendor_invitations (
-  vendor_id,
+-- name: CreatePartnerInvitation :one
+INSERT INTO partner_invitations (
+  partner_id,
   email,
   token,
   invited_by,
@@ -211,11 +211,216 @@ INSERT INTO vendor_invitations (
   $1, $2, $3, $4, $5, $6
 ) RETURNING *;
 
--- name: GetVendorInvitationByToken :one
-SELECT * FROM vendor_invitations WHERE token = $1;
+-- name: GetPartnerInvitationByToken :one
+SELECT * FROM partner_invitations WHERE token = $1;
 
--- name: GetVendorInvitationsByVendor :many
-SELECT * FROM vendor_invitations WHERE vendor_id = $1 ORDER BY created_at DESC;
+-- name: GetPartnerInvitationsByPartner :many
+SELECT * FROM partner_invitations WHERE partner_id = $1 ORDER BY created_at DESC;
 
--- name: UpdateVendorInvitationStatus :one
-UPDATE vendor_invitations SET status = $2 WHERE id = $1 RETURNING *;
+-- name: UpdatePartnerInvitationStatus :one
+UPDATE partner_invitations SET status = $2 WHERE id = $1 RETURNING *;
+
+
+-- ============================================================
+-- FORM TEMPLATES
+-- ============================================================
+
+-- name: CreateFormTemplate :one
+INSERT INTO form_templates (
+  title,
+  description,
+  category
+) VALUES (
+  $1,
+  $2,
+  $3
+) RETURNING *;
+
+-- name: GetFormTemplateByID :one
+SELECT * FROM form_templates WHERE id = $1;
+
+-- name: GetAllFormTemplates :many
+SELECT * FROM form_templates
+WHERE is_active = true
+ORDER BY created_at DESC;
+
+-- name: UpdateFormTemplate :one
+UPDATE form_templates SET
+  title = $2,
+  description = $3,
+  category = $4,
+  is_active = $5
+WHERE id = $1
+RETURNING *;
+
+-- name: DeleteFormTemplate :exec
+DELETE FROM form_templates WHERE id = $1;
+
+
+-- ============================================================
+-- FORMS
+-- ============================================================
+
+-- name: CreateForm :one
+INSERT INTO forms (
+  organization_id,
+  template_id,
+  title,
+  description,
+  status
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  $5
+) RETURNING *;
+
+-- name: GetFormByID :one
+SELECT * FROM forms WHERE id = $1;
+
+-- name: GetFormsByOrg :many
+SELECT * FROM forms
+WHERE organization_id = $1
+ORDER BY created_at DESC;
+
+-- name: UpdateForm :one
+UPDATE forms SET
+  title = $2,
+  description = $3,
+  status = $4
+WHERE id = $1
+RETURNING *;
+
+-- name: DeleteForm :exec
+DELETE FROM forms WHERE id = $1;
+
+-- name: CloneTemplateToForm :one
+INSERT INTO forms (
+  organization_id,
+  template_id,
+  title,
+  description,
+  status
+)
+SELECT
+  $1,
+  $2,
+  $3,
+  ft.description,
+  'draft'
+FROM form_templates ft
+WHERE ft.id = $2
+RETURNING *;
+
+
+-- ============================================================
+-- FORM FIELDS
+-- ============================================================
+
+-- name: CreateFormField :one
+INSERT INTO form_fields (
+  form_id,
+  section_id,
+  field_type,
+  label,
+  key,
+  description,
+  placeholder,
+  is_required,
+  sort_order,
+  validation,
+  options
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  $5,
+  $6,
+  $7,
+  $8,
+  $9,
+  $10,
+  $11
+) RETURNING *;
+
+-- name: GetFormFieldByID :one
+SELECT * FROM form_fields WHERE id = $1;
+
+-- name: GetFormFieldsByFormID :many
+SELECT * FROM form_fields
+WHERE form_id = $1
+ORDER BY sort_order ASC;
+
+-- name: GetFormFieldsBySectionID :many
+SELECT * FROM form_fields
+WHERE section_id = $1
+ORDER BY sort_order ASC;
+
+-- name: UpdateFormField :one
+UPDATE form_fields SET
+  field_type = $2,
+  label = $3,
+  key = $4,
+  description = $5,
+  placeholder = $6,
+  is_required = $7,
+  sort_order = $8,
+  validation = $9,
+  options = $10
+WHERE id = $1
+RETURNING *;
+
+-- name: DeleteFormField :exec
+DELETE FROM form_fields WHERE id = $1;
+
+
+-- ============================================================
+-- FORM SUBMISSIONS
+-- ============================================================
+
+-- name: CreateFormSubmission :one
+INSERT INTO form_submissions (
+  form_id,
+  partner_id,
+  submitted_by,
+  status,
+  responses,
+  submitted_at
+) VALUES (
+  $1,
+  $2,
+  $3,
+  $4,
+  $5,
+  $6
+) RETURNING *;
+
+-- name: GetFormSubmissionByID :one
+SELECT * FROM form_submissions WHERE id = $1;
+
+-- name: GetFormSubmissionsByFormID :many
+SELECT * FROM form_submissions
+WHERE form_id = $1
+ORDER BY created_at DESC;
+
+-- name: GetFormSubmissionsByPartnerID :many
+SELECT * FROM form_submissions
+WHERE partner_id = $1
+ORDER BY created_at DESC;
+
+-- name: UpdateFormSubmission :one
+UPDATE form_submissions SET
+  status = $2,
+  responses = $3
+WHERE id = $1
+RETURNING *;
+
+-- name: ReviewFormSubmission :one
+UPDATE form_submissions SET
+  status = $2,
+  reviewed_by = $3,
+  reviewed_at = now()
+WHERE id = $1
+RETURNING *;

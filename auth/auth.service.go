@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"vendor-guard/auth/jwt"
-	"vendor-guard/internal/repo"
-	"vendor-guard/utils"
+	"preuvio/auth/jwt"
+	"preuvio/internal/repo"
+	"preuvio/utils"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"

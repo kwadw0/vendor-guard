@@ -1,20 +1,20 @@
-package vendors
+package partners
 
 import (
 	"errors"
 	"net/http"
 
-	"vendor-guard/middleware"
-	"vendor-guard/utils"
+	"preuvio/middleware"
+	"preuvio/utils"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 )
 
 type InviteHandler interface {
-	InviteVendorUser(w http.ResponseWriter, r *http.Request)
+	InvitePartnerUser(w http.ResponseWriter, r *http.Request)
 	AcceptInvitation(w http.ResponseWriter, r *http.Request)
-	GetVendorInvitations(w http.ResponseWriter, r *http.Request)
+	GetPartnerInvitations(w http.ResponseWriter, r *http.Request)
 }
 
 type inviteHandler struct {
@@ -26,30 +26,30 @@ func NewInviteHandler(s InviteService, v *validator.Validate) InviteHandler {
 	return &inviteHandler{service: s, validator: v}
 }
 
-// InviteVendorUser godoc
+// InvitePartnerUser godoc
 //
-//	@Summary		Invite a vendor user
-//	@Description	Creates an invitation for a vendor user to join the platform. Requires organization role.
-//	@Tags			vendors
+//	@Summary		Invite a partner user
+//	@Description	Creates an invitation for a partner user to join the platform. Requires organization role.
+//	@Tags			partners
 //	@Accept			json
 //	@Produce		json
-//	@Param			vendorId	path	string					true	"Vendor UUID"
-//	@Param			body		body	InviteVendorUserDto		true	"Invitation payload"
-//	@Success		201			{object}	utils.SuccessResponse{data=vendors.InvitationResponse}	"Invitation created"
+//	@Param			partnerId	path	string					true	"Partner UUID"
+//	@Param			body		body	InvitePartnerUserDto		true	"Invitation payload"
+//	@Success		201			{object}	utils.SuccessResponse{data=partners.InvitationResponse}	"Invitation created"
 //	@Failure		400			{object}	utils.ErrorResponse	"Bad request or validation error"
 //	@Failure		403			{object}	utils.ErrorResponse	"Access denied"
 //	@Failure		500			{object}	utils.ErrorResponse	"Internal server error"
 //	@Security		BearerAuth
-//	@Router			/api/vendors/{vendorId}/invite [post]
-func (h *inviteHandler) InviteVendorUser(w http.ResponseWriter, r *http.Request) {
+//	@Router			/api/partners/{partnerId}/invite [post]
+func (h *inviteHandler) InvitePartnerUser(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
-	vendorID := chi.URLParam(r, "vendorId")
-	if vendorID == "" {
-		utils.ErrorJSON(w, http.StatusBadRequest, errors.New("vendor id is required"), "BAD_REQUEST")
+	partnerID := chi.URLParam(r, "partnerId")
+	if partnerID == "" {
+		utils.ErrorJSON(w, http.StatusBadRequest, errors.New("partner id is required"), "BAD_REQUEST")
 		return
 	}
 
-	var dto InviteVendorUserDto
+	var dto InvitePartnerUserDto
 	if err := utils.ReadJSON(w, r, &dto); err != nil {
 		utils.ErrorJSON(w, http.StatusBadRequest, err, "BAD_REQUEST")
 		return
@@ -59,9 +59,9 @@ func (h *inviteHandler) InviteVendorUser(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	invitation, err := h.service.InviteUser(r.Context(), vendorID, userID, dto)
+	invitation, err := h.service.InviteUser(r.Context(), partnerID, userID, dto)
 	if err != nil {
-		if errors.Is(err, ErrVendorMismatch) {
+		if errors.Is(err, ErrPartnerMismatch) {
 			utils.ErrorJSON(w, http.StatusForbidden, err, "FORBIDDEN")
 			return
 		}
@@ -74,18 +74,18 @@ func (h *inviteHandler) InviteVendorUser(w http.ResponseWriter, r *http.Request)
 
 // AcceptInvitation godoc
 //
-//	@Summary		Accept a vendor invitation
-//	@Description	Accepts an invitation to join a vendor. Creates account and returns JWT tokens. Public endpoint.
-//	@Tags			vendors
+//	@Summary		Accept a partner invitation
+//	@Description	Accepts an invitation to join a partner. Creates account and returns JWT tokens. Public endpoint.
+//	@Tags			partners
 //	@Accept			json
 //	@Produce		json
 //	@Param			body	body		AcceptInviteDto								true	"Accept invitation payload"
-//	@Success		200		{object}	utils.SuccessResponse{data=vendors.TokenResponse}	"Invitation accepted, tokens returned"
+//	@Success		200		{object}	utils.SuccessResponse{data=partners.TokenResponse}	"Invitation accepted, tokens returned"
 //	@Failure		400		{object}	utils.ErrorResponse	"Bad request or validation error"
 //	@Failure		404		{object}	utils.ErrorResponse	"Invitation not found or expired"
 //	@Failure		409		{object}	utils.ErrorResponse	"User already exists with an organization"
 //	@Failure		500		{object}	utils.ErrorResponse	"Internal server error"
-//	@Router			/api/vendors/invite/accept [post]
+//	@Router			/api/partners/invite/accept [post]
 func (h *inviteHandler) AcceptInvitation(w http.ResponseWriter, r *http.Request) {
 	var dto AcceptInviteDto
 	if err := utils.ReadJSON(w, r, &dto); err != nil {
@@ -104,7 +104,7 @@ func (h *inviteHandler) AcceptInvitation(w http.ResponseWriter, r *http.Request)
 			utils.ErrorJSON(w, http.StatusNotFound, err, "INVITATION_INVALID")
 		case errors.Is(err, ErrInvitationAlreadyUsed):
 			utils.ErrorJSON(w, http.StatusConflict, err, "INVITATION_USED")
-		case errors.Is(err, ErrVendorUserExists):
+		case errors.Is(err, ErrPartnerUserExists):
 			utils.ErrorJSON(w, http.StatusConflict, err, "USER_EXISTS")
 		default:
 			utils.ErrorJSON(w, http.StatusInternalServerError, err, "INTERNAL_ERROR")
@@ -115,26 +115,26 @@ func (h *inviteHandler) AcceptInvitation(w http.ResponseWriter, r *http.Request)
 	utils.WriteJSON(w, http.StatusOK, "Invitation accepted successfully", tokens)
 }
 
-// GetVendorInvitations godoc
+// GetPartnerInvitations godoc
 //
-//	@Summary		List invitations for a vendor
-//	@Description	Retrieves all invitations sent for a specific vendor.
-//	@Tags			vendors
+//	@Summary		List invitations for a partner
+//	@Description	Retrieves all invitations sent for a specific partner.
+//	@Tags			partners
 //	@Produce		json
-//	@Param			vendorId	path	string	true	"Vendor UUID"
+//	@Param			partnerId	path	string	true	"Partner UUID"
 //	@Success		200	{object}	utils.SuccessResponse{data=[]InvitationResponse}	"Invitations retrieved"
 //	@Failure		500	{object}	utils.ErrorResponse	"Internal server error"
 //	@Security		BearerAuth
-//	@Router			/api/vendors/{vendorId}/invite [get]
-func (h *inviteHandler) GetVendorInvitations(w http.ResponseWriter, r *http.Request) {
+//	@Router			/api/partners/{partnerId}/invite [get]
+func (h *inviteHandler) GetPartnerInvitations(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
-	vendorID := chi.URLParam(r, "vendorId")
-	if vendorID == "" {
-		utils.ErrorJSON(w, http.StatusBadRequest, errors.New("vendor id is required"), "BAD_REQUEST")
+	partnerID := chi.URLParam(r, "partnerId")
+	if partnerID == "" {
+		utils.ErrorJSON(w, http.StatusBadRequest, errors.New("partner id is required"), "BAD_REQUEST")
 		return
 	}
 
-	invitations, err := h.service.GetInvitationsByVendor(r.Context(), vendorID, userID)
+	invitations, err := h.service.GetInvitationsByPartner(r.Context(), partnerID, userID)
 	if err != nil {
 		if errors.Is(err, ErrAccessDenied) {
 			utils.ErrorJSON(w, http.StatusForbidden, err, "FORBIDDEN")
