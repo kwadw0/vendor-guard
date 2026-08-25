@@ -1,0 +1,2107 @@
+basePath: /
+definitions:
+  auth.LoginDto:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  auth.RefreshTokenDto:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  auth.SignupDto:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      phone:
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    - phone
+    type: object
+  auth.TokenResponseDto:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  form_fields.CreateFormFieldDto:
+    properties:
+      description:
+        maxLength: 1000
+        type: string
+      field_type:
+        enum:
+        - text
+        - textarea
+        - number
+        - email
+        - phone
+        - date
+        - checkbox
+        - radio
+        - select
+        - multiselect
+        - file
+        - richtext
+        type: string
+      is_required:
+        type: boolean
+      key:
+        maxLength: 100
+        minLength: 1
+        type: string
+      label:
+        maxLength: 255
+        minLength: 1
+        type: string
+      options: {}
+      placeholder:
+        maxLength: 255
+        type: string
+      section_id:
+        type: string
+      sort_order:
+        type: integer
+      validation: {}
+    required:
+    - field_type
+    - key
+    - label
+    - section_id
+    type: object
+  form_fields.FormFieldResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      field_type:
+        type: string
+      form_id:
+        type: string
+      id:
+        type: string
+      is_required:
+        type: boolean
+      key:
+        type: string
+      label:
+        type: string
+      options: {}
+      placeholder:
+        type: string
+      section_id:
+        type: string
+      sort_order:
+        type: integer
+      updated_at:
+        type: string
+      validation: {}
+    type: object
+  form_fields.UpdateFormFieldDto:
+    properties:
+      description:
+        maxLength: 1000
+        type: string
+      field_type:
+        enum:
+        - text
+        - textarea
+        - number
+        - email
+        - phone
+        - date
+        - checkbox
+        - radio
+        - select
+        - multiselect
+        - file
+        - richtext
+        type: string
+      is_required:
+        type: boolean
+      key:
+        maxLength: 100
+        minLength: 1
+        type: string
+      label:
+        maxLength: 255
+        minLength: 1
+        type: string
+      options: {}
+      placeholder:
+        maxLength: 255
+        type: string
+      sort_order:
+        type: integer
+      validation: {}
+    required:
+    - field_type
+    - key
+    - label
+    type: object
+  form_submissions.CreateFormSubmissionDto:
+    properties:
+      responses:
+        additionalProperties: true
+        type: object
+    required:
+    - responses
+    type: object
+  form_submissions.FormSubmissionResponse:
+    properties:
+      created_at:
+        type: string
+      form_id:
+        type: string
+      id:
+        type: string
+      partner_id:
+        type: string
+      responses:
+        additionalProperties: true
+        type: object
+      reviewed_at:
+        type: string
+      reviewed_by:
+        type: string
+      status:
+        type: string
+      submitted_at:
+        type: string
+      submitted_by:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  form_submissions.ReviewFormSubmissionDto:
+    properties:
+      status:
+        enum:
+        - approved
+        - rejected
+        - revision_required
+        type: string
+    required:
+    - status
+    type: object
+  form_templates.CloneTemplateDto:
+    properties:
+      title:
+        maxLength: 255
+        minLength: 2
+        type: string
+    required:
+    - title
+    type: object
+  form_templates.CreateFormTemplateDto:
+    properties:
+      category:
+        maxLength: 100
+        type: string
+      description:
+        maxLength: 1000
+        type: string
+      title:
+        maxLength: 255
+        minLength: 2
+        type: string
+    required:
+    - title
+    type: object
+  form_templates.FormTemplateResponse:
+    properties:
+      category:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  form_templates.UpdateFormTemplateDto:
+    properties:
+      category:
+        maxLength: 100
+        type: string
+      description:
+        maxLength: 1000
+        type: string
+      is_active:
+        type: boolean
+      title:
+        maxLength: 255
+        minLength: 2
+        type: string
+    required:
+    - title
+    type: object
+  forms.CreateFormDto:
+    properties:
+      description:
+        maxLength: 1000
+        type: string
+      template_id:
+        type: string
+      title:
+        maxLength: 255
+        minLength: 2
+        type: string
+    required:
+    - title
+    type: object
+  forms.FormResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      organization_id:
+        type: string
+      status:
+        type: string
+      template_id:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  forms.UpdateFormDto:
+    properties:
+      description:
+        maxLength: 1000
+        type: string
+      status:
+        enum:
+        - draft
+        - active
+        - archived
+        type: string
+      title:
+        maxLength: 255
+        minLength: 2
+        type: string
+    required:
+    - title
+    type: object
+  organizations.CreateOrganizationDto:
+    properties:
+      description:
+        type: string
+      industry:
+        type: string
+      name:
+        type: string
+      owner_role:
+        type: string
+      primary_customer_type:
+        enum:
+        - b2b
+        - b2c
+        - both
+        type: string
+      team_size:
+        type: string
+      website_url:
+        type: string
+    required:
+    - industry
+    - name
+    - owner_role
+    - primary_customer_type
+    - team_size
+    type: object
+  organizations.OrganizationResponseDto:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      industry:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      owner_role:
+        type: string
+      primary_customer_type:
+        type: string
+      team_size:
+        type: string
+      updated_at:
+        type: string
+      website_url:
+        type: string
+    type: object
+  organizations.UpdateOrganizationDto:
+    properties:
+      description:
+        type: string
+      industry:
+        type: string
+      name:
+        type: string
+      owner_role:
+        type: string
+      primary_customer_type:
+        enum:
+        - b2b
+        - b2c
+        - both
+        type: string
+      team_size:
+        type: string
+      website_url:
+        type: string
+    required:
+    - industry
+    - name
+    - owner_role
+    - primary_customer_type
+    - team_size
+    type: object
+  partners.AcceptInviteDto:
+    properties:
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      phone:
+        type: string
+      token:
+        type: string
+    required:
+    - first_name
+    - last_name
+    - password
+    - phone
+    - token
+    type: object
+  partners.CreatePartnerDto:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+      phone:
+        maxLength: 255
+        type: string
+    required:
+    - name
+    type: object
+  partners.InvitationResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: string
+      partner_id:
+        type: string
+      role_id:
+        type: string
+      status:
+        type: string
+    type: object
+  partners.InvitePartnerUserDto:
+    properties:
+      email:
+        type: string
+      role_id:
+        type: string
+    required:
+    - email
+    - role_id
+    type: object
+  partners.PartnerResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      organization_id:
+        type: string
+      phone:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  partners.TokenResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  partners.UpdatePartnerDto:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      id:
+        type: string
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+      phone:
+        maxLength: 255
+        type: string
+    required:
+    - name
+    type: object
+  users.CreateUserDto:
+    properties:
+      avatar_url:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      phone:
+        type: string
+      roleID:
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    - phone
+    - roleID
+    type: object
+  users.UpdateUserDto:
+    properties:
+      avatar_url:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      phone:
+        type: string
+      role_id:
+        type: string
+    type: object
+  users.UserResponseDto:
+    properties:
+      access_token:
+        type: string
+      avatar_url:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      organization_id:
+        type: string
+      phone:
+        type: string
+      role_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  utils.EmptyData:
+    type: object
+  utils.ErrorResponse:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  utils.SuccessResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+host: localhost:8000
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample server for Preuvio.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Preuvio API
+  version: "1.0"
+paths:
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns access and refresh tokens
+      parameters:
+      - description: User login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.TokenResponseDto'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: User login
+      tags:
+      - auth
+  /api/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Generates a new pair of access and refresh tokens using a valid
+        refresh token
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RefreshTokenDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token refreshed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.TokenResponseDto'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Refresh access token
+      tags:
+      - auth
+  /api/auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user and returns access and refresh tokens
+      parameters:
+      - description: User signup data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.SignupDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Signup successful
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/auth.TokenResponseDto'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - auth
+  /api/forms:
+    get:
+      description: Retrieves all forms for the authenticated user's organization
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Forms retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/forms.FormResponse'
+                  type: array
+              type: object
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List org forms
+      tags:
+      - forms
+    post:
+      consumes:
+      - application/json
+      description: Creates a new form for the authenticated user's organization
+      parameters:
+      - description: Form payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/forms.CreateFormDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Form created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/forms.FormResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a form
+      tags:
+      - forms
+  /api/forms/{formId}/fields:
+    get:
+      description: Retrieves all fields for a form
+      parameters:
+      - description: Form UUID
+        in: path
+        name: formId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Fields retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/form_fields.FormFieldResponse'
+                  type: array
+              type: object
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Form not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List form fields
+      tags:
+      - form-fields
+    post:
+      consumes:
+      - application/json
+      description: Creates a new field within a form section
+      parameters:
+      - description: Form UUID
+        in: path
+        name: formId
+        required: true
+        type: string
+      - description: Field payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/form_fields.CreateFormFieldDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Field created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/form_fields.FormFieldResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add a field to a form
+      tags:
+      - form-fields
+  /api/forms/{formId}/fields/{fieldId}:
+    delete:
+      description: Permanently deletes a form field
+      parameters:
+      - description: Field UUID
+        in: path
+        name: fieldId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Field deleted successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Field not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a form field
+      tags:
+      - form-fields
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing form field
+      parameters:
+      - description: Field UUID
+        in: path
+        name: fieldId
+        required: true
+        type: string
+      - description: Updated field payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/form_fields.UpdateFormFieldDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Field updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/form_fields.FormFieldResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Field not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a form field
+      tags:
+      - form-fields
+  /api/forms/{formId}/submissions:
+    get:
+      description: Retrieves all submissions for a form (org view)
+      parameters:
+      - description: Form UUID
+        in: path
+        name: formId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Submissions retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/form_submissions.FormSubmissionResponse'
+                  type: array
+              type: object
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Form not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List form submissions
+      tags:
+      - form-submissions
+    post:
+      consumes:
+      - application/json
+      description: Creates a new form submission from a partner
+      parameters:
+      - description: Form UUID
+        in: path
+        name: formId
+        required: true
+        type: string
+      - description: Submission payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/form_submissions.CreateFormSubmissionDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Submission created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/form_submissions.FormSubmissionResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit a form response
+      tags:
+      - form-submissions
+  /api/forms/{id}:
+    delete:
+      description: Permanently deletes a form
+      parameters:
+      - description: Form UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Form deleted successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Form not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a form
+      tags:
+      - forms
+    get:
+      description: Retrieves a form by ID with its sections and fields
+      parameters:
+      - description: Form UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Form retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/forms.FormResponse'
+              type: object
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Form not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a form
+      tags:
+      - forms
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing form's details
+      parameters:
+      - description: Form UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated form payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/forms.UpdateFormDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Form updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/forms.FormResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Form not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a form
+      tags:
+      - forms
+  /api/organizations:
+    get:
+      description: Retrieve a list of all organizations
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/organizations.OrganizationResponseDto'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: List all organizations
+      tags:
+      - organizations
+    post:
+      consumes:
+      - application/json
+      description: Creates a new organization and links it to the authenticated user.
+        Requires Bearer token.
+      parameters:
+      - description: Organization data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/organizations.CreateOrganizationDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/organizations.OrganizationResponseDto'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new organization
+      tags:
+      - organizations
+  /api/organizations/{id}:
+    delete:
+      description: Delete an organization by ID
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/utils.EmptyData'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Delete an organization
+      tags:
+      - organizations
+    get:
+      description: Retrieve organization details by its UUID
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/organizations.OrganizationResponseDto'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Get organization by ID
+      tags:
+      - organizations
+    put:
+      consumes:
+      - application/json
+      description: Update an existing organization by ID
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated organization data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/organizations.UpdateOrganizationDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/organizations.OrganizationResponseDto'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Update an organization
+      tags:
+      - organizations
+  /api/organizations/me:
+    get:
+      description: Returns the organization the authenticated user belongs to. Requires
+        Bearer token.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/organizations.OrganizationResponseDto'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my organization
+      tags:
+      - organizations
+  /api/partners:
+    get:
+      description: Retrieves all partners scoped to the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Partners retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/partners.PartnerResponse'
+                  type: array
+              type: object
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all partners
+      tags:
+      - partners
+    post:
+      consumes:
+      - application/json
+      description: Creates a new partner under an organization
+      parameters:
+      - description: Partner payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/partners.CreatePartnerDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Partner created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/partners.PartnerResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new partner
+      tags:
+      - partners
+  /api/partners/{id}:
+    delete:
+      description: Permanently deletes a partner by ID
+      parameters:
+      - description: Partner UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Partner deleted successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/utils.EmptyData'
+              type: object
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a partner
+      tags:
+      - partners
+    get:
+      description: Retrieves a single partner by its UUID
+      parameters:
+      - description: Partner UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Partner retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/partners.PartnerResponse'
+              type: object
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Partner not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a partner by ID
+      tags:
+      - partners
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing partner's details by ID
+      parameters:
+      - description: Partner UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated partner payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/partners.UpdatePartnerDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Partner updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/partners.PartnerResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a partner
+      tags:
+      - partners
+  /api/partners/{partnerId}/invite:
+    get:
+      description: Retrieves all invitations sent for a specific partner.
+      parameters:
+      - description: Partner UUID
+        in: path
+        name: partnerId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Invitations retrieved
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/partners.InvitationResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List invitations for a partner
+      tags:
+      - partners
+    post:
+      consumes:
+      - application/json
+      description: Creates an invitation for a partner user to join the platform.
+        Requires organization role.
+      parameters:
+      - description: Partner UUID
+        in: path
+        name: partnerId
+        required: true
+        type: string
+      - description: Invitation payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/partners.InvitePartnerUserDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Invitation created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/partners.InvitationResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Invite a partner user
+      tags:
+      - partners
+  /api/partners/{partnerId}/submissions:
+    get:
+      description: Retrieves all submissions for a partner
+      parameters:
+      - description: Partner UUID
+        in: path
+        name: partnerId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Submissions retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/form_submissions.FormSubmissionResponse'
+                  type: array
+              type: object
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List partner submissions
+      tags:
+      - form-submissions
+  /api/partners/invite/accept:
+    post:
+      consumes:
+      - application/json
+      description: Accepts an invitation to join a partner. Creates account and returns
+        JWT tokens. Public endpoint.
+      parameters:
+      - description: Accept invitation payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/partners.AcceptInviteDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Invitation accepted, tokens returned
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/partners.TokenResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Invitation not found or expired
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "409":
+          description: User already exists with an organization
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Accept a partner invitation
+      tags:
+      - partners
+  /api/submissions/{id}:
+    get:
+      description: Retrieves a form submission by ID
+      parameters:
+      - description: Submission UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Submission retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/form_submissions.FormSubmissionResponse'
+              type: object
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Submission not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a submission
+      tags:
+      - form-submissions
+  /api/submissions/{id}/review:
+    put:
+      consumes:
+      - application/json
+      description: Approves, rejects, or requests revision on a submission
+      parameters:
+      - description: Submission UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Review payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/form_submissions.ReviewFormSubmissionDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Submission reviewed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/form_submissions.FormSubmissionResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Submission not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Review a submission
+      tags:
+      - form-submissions
+  /api/templates:
+    get:
+      description: Retrieves all active form templates
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Templates retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/form_templates.FormTemplateResponse'
+                  type: array
+              type: object
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all form templates
+      tags:
+      - form-templates
+    post:
+      consumes:
+      - application/json
+      description: Creates a new global form template
+      parameters:
+      - description: Template payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/form_templates.CreateFormTemplateDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Template created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/form_templates.FormTemplateResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a form template
+      tags:
+      - form-templates
+  /api/templates/{id}:
+    delete:
+      description: Permanently deletes a form template
+      parameters:
+      - description: Template UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Template deleted successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "404":
+          description: Template not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a form template
+      tags:
+      - form-templates
+    get:
+      description: Retrieves a form template by ID
+      parameters:
+      - description: Template UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Template retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/form_templates.FormTemplateResponse'
+              type: object
+        "404":
+          description: Template not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a form template
+      tags:
+      - form-templates
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing form template
+      parameters:
+      - description: Template UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated template payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/form_templates.UpdateFormTemplateDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Template updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/form_templates.FormTemplateResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Template not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a form template
+      tags:
+      - form-templates
+  /api/templates/{id}/clone:
+    post:
+      consumes:
+      - application/json
+      description: Clones a form template into a new org form
+      parameters:
+      - description: Template UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Clone payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/form_templates.CloneTemplateDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Form cloned successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/form_templates.FormTemplateResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Template not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Clone a template to a form
+      tags:
+      - form-templates
+  /api/users:
+    get:
+      description: Retrieve a list of all users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/users.UserResponseDto'
+                  type: array
+              type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Get all users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user in the system
+      parameters:
+      - description: User creation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/users.CreateUserDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/users.UserResponseDto'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Create a new user
+      tags:
+      - users
+  /api/users/{id}:
+    delete:
+      description: Delete a user by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: User deleted successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/utils.EmptyData'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Delete a user
+      tags:
+      - users
+    get:
+      description: Retrieve user details by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/users.UserResponseDto'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Get a user by ID
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update user details
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/users.UpdateUserDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/users.UserResponseDto'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Update a user
+      tags:
+      - users
+swagger: "2.0"

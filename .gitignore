@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+preuvio
 
 # Test binaries
 *.test
@@ -49,10 +50,6 @@ temp/
 # Air hot reload
 .air.toml
 
-# Swagger generated docs (optional)
-docs/docs.go
-docs/swagger.json
-docs/swagger.yaml
-
 #graphify
 .graphify/
+graphify-out/
