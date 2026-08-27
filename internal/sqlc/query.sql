@@ -315,12 +315,52 @@ RETURNING *;
 
 
 -- ============================================================
+-- FORM SECTIONS
+-- ============================================================
+
+-- name: CreateFormSection :one
+INSERT INTO form_sections (
+  form_id,
+  template_id,
+  title,
+  description,
+  sort_order
+) VALUES (
+  $1, $2, $3, $4, $5
+) RETURNING *;
+
+-- name: GetFormSectionByID :one
+SELECT * FROM form_sections WHERE id = $1;
+
+-- name: GetFormSectionsByFormID :many
+SELECT * FROM form_sections
+WHERE form_id = $1
+ORDER BY sort_order ASC;
+
+-- name: GetTemplateSectionsByTemplateID :many
+SELECT * FROM form_sections
+WHERE template_id = $1
+ORDER BY sort_order ASC;
+
+-- name: UpdateFormSection :one
+UPDATE form_sections SET
+  title = $2,
+  description = $3,
+  sort_order = $4
+WHERE id = $1
+RETURNING *;
+
+-- name: DeleteFormSection :exec
+DELETE FROM form_sections WHERE id = $1;
+
+-- ============================================================
 -- FORM FIELDS
 -- ============================================================
 
 -- name: CreateFormField :one
 INSERT INTO form_fields (
   form_id,
+  template_id,
   section_id,
   field_type,
   label,
@@ -342,7 +382,8 @@ INSERT INTO form_fields (
   $8,
   $9,
   $10,
-  $11
+  $11,
+  $12
 ) RETURNING *;
 
 -- name: GetFormFieldByID :one
@@ -351,6 +392,11 @@ SELECT * FROM form_fields WHERE id = $1;
 -- name: GetFormFieldsByFormID :many
 SELECT * FROM form_fields
 WHERE form_id = $1
+ORDER BY sort_order ASC;
+
+-- name: GetTemplateFieldsByTemplateID :many
+SELECT * FROM form_fields
+WHERE template_id = $1
 ORDER BY sort_order ASC;
 
 -- name: GetFormFieldsBySectionID :many

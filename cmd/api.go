@@ -12,6 +12,7 @@ import (
 
 	"preuvio/auth"
 	"preuvio/form_fields"
+	"preuvio/form_sections"
 	"preuvio/form_submissions"
 	"preuvio/form_templates"
 	"preuvio/forms"
@@ -105,17 +106,33 @@ func (app *application) mount() http.Handler {
 	r.Post("/api/partners/invite/accept", partnerInviteHandler.AcceptInvitation)
 
 	// Form template routes
-	formTemplateService := form_templates.NewService(repoQueries)
+	formTemplateService := form_templates.NewServiceWithPool(app.db, repoQueries)
 	formTemplateHandler := form_templates.NewHandler(formTemplateService, app.validator)
+	templateFieldService := form_templates.NewTemplateFieldService(repoQueries)
+	templateFieldHandler := form_templates.NewTemplateFieldHandler(templateFieldService, app.validator)
+
+	sectionService := form_sections.NewService(repoQueries)
+	sectionHandler := form_sections.NewHandler(sectionService, app.validator)
 
 	r.Route("/api/templates", func(r chi.Router) {
 		r.Use(authMiddleware)
 		r.Post("/", formTemplateHandler.CreateTemplate)
 		r.Get("/", formTemplateHandler.GetAllTemplates)
 		r.Get("/{id}", formTemplateHandler.GetTemplateByID)
+		r.Get("/{id}/detail", formTemplateHandler.GetTemplateDetail)
 		r.Put("/{id}", formTemplateHandler.UpdateTemplate)
 		r.Delete("/{id}", formTemplateHandler.DeleteTemplate)
 		r.Post("/{id}/clone", formTemplateHandler.CloneTemplateToForm)
+
+		// Template section routes
+		r.Post("/{id}/sections", sectionHandler.CreateTemplateSection)
+		r.Get("/{id}/sections", sectionHandler.GetTemplateSections)
+
+		// Template field routes
+		r.Post("/{id}/fields", templateFieldHandler.CreateField)
+		r.Get("/{id}/fields", templateFieldHandler.GetFieldsByTemplateID)
+		r.Put("/fields/{fieldId}", templateFieldHandler.UpdateField)
+		r.Delete("/fields/{fieldId}", templateFieldHandler.DeleteField)
 	})
 
 	// Form routes
@@ -127,8 +144,13 @@ func (app *application) mount() http.Handler {
 		r.Post("/", formHandler.CreateForm)
 		r.Get("/", formHandler.GetFormsByOrg)
 		r.Get("/{formId}", formHandler.GetFormByID)
+		r.Get("/{formId}/detail", formHandler.GetFormDetail)
 		r.Put("/{formId}", formHandler.UpdateForm)
 		r.Delete("/{formId}", formHandler.DeleteForm)
+
+		// Form section routes
+		r.Post("/{formId}/sections", sectionHandler.CreateFormSection)
+		r.Get("/{formId}/sections", sectionHandler.GetFormSections)
 
 		// Form field routes
 		formFieldService := form_fields.NewService(repoQueries)
@@ -145,6 +167,13 @@ func (app *application) mount() http.Handler {
 
 		r.Post("/{formId}/submissions", formSubmissionHandler.CreateSubmission)
 		r.Get("/{formId}/submissions", formSubmissionHandler.GetSubmissionsByFormID)
+	})
+
+	// Generic section routes (update/delete both form and template sections)
+	r.Route("/api/sections", func(r chi.Router) {
+		r.Use(authMiddleware)
+		r.Put("/{sectionId}", sectionHandler.UpdateSection)
+		r.Delete("/{sectionId}", sectionHandler.DeleteSection)
 	})
 
 	// Submission review routes (outside /api/forms for cleaner URLs)

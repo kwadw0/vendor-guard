@@ -22,6 +22,10 @@ type Querier interface {
 	// ============================================================
 	CreateFormField(ctx context.Context, arg CreateFormFieldParams) (FormField, error)
 	// ============================================================
+	// FORM SECTIONS
+	// ============================================================
+	CreateFormSection(ctx context.Context, arg CreateFormSectionParams) (FormSection, error)
+	// ============================================================
 	// FORM SUBMISSIONS
 	// ============================================================
 	CreateFormSubmission(ctx context.Context, arg CreateFormSubmissionParams) (FormSubmission, error)
@@ -39,6 +43,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteForm(ctx context.Context, id uuid.UUID) error
 	DeleteFormField(ctx context.Context, id uuid.UUID) error
+	DeleteFormSection(ctx context.Context, id uuid.UUID) error
 	DeleteFormTemplate(ctx context.Context, id uuid.UUID) error
 	DeleteOrganization(ctx context.Context, id uuid.UUID) error
 	DeletePartner(ctx context.Context, id uuid.UUID) error
@@ -49,8 +54,10 @@ type Querier interface {
 	GetAllPartners(ctx context.Context) ([]Partner, error)
 	GetFormByID(ctx context.Context, id uuid.UUID) (Form, error)
 	GetFormFieldByID(ctx context.Context, id uuid.UUID) (FormField, error)
-	GetFormFieldsByFormID(ctx context.Context, formID uuid.UUID) ([]FormField, error)
+	GetFormFieldsByFormID(ctx context.Context, formID pgtype.UUID) ([]FormField, error)
 	GetFormFieldsBySectionID(ctx context.Context, sectionID uuid.UUID) ([]FormField, error)
+	GetFormSectionByID(ctx context.Context, id uuid.UUID) (FormSection, error)
+	GetFormSectionsByFormID(ctx context.Context, formID pgtype.UUID) ([]FormSection, error)
 	GetFormSubmissionByID(ctx context.Context, id uuid.UUID) (FormSubmission, error)
 	GetFormSubmissionsByFormID(ctx context.Context, formID uuid.UUID) ([]FormSubmission, error)
 	GetFormSubmissionsByPartnerID(ctx context.Context, partnerID uuid.UUID) ([]FormSubmission, error)
@@ -65,6 +72,8 @@ type Querier interface {
 	GetPartnersByOrg(ctx context.Context, organizationID uuid.UUID) ([]Partner, error)
 	GetRoleByID(ctx context.Context, id uuid.UUID) (Role, error)
 	GetRoleByName(ctx context.Context, name string) (Role, error)
+	GetTemplateFieldsByTemplateID(ctx context.Context, templateID pgtype.UUID) ([]FormField, error)
+	GetTemplateSectionsByTemplateID(ctx context.Context, templateID pgtype.UUID) ([]FormSection, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByRefreshToken(ctx context.Context, refreshToken pgtype.Text) (User, error)
@@ -74,6 +83,7 @@ type Querier interface {
 	RevokeRefreshToken(ctx context.Context, id uuid.UUID) error
 	UpdateForm(ctx context.Context, arg UpdateFormParams) (Form, error)
 	UpdateFormField(ctx context.Context, arg UpdateFormFieldParams) (FormField, error)
+	UpdateFormSection(ctx context.Context, arg UpdateFormSectionParams) (FormSection, error)
 	UpdateFormSubmission(ctx context.Context, arg UpdateFormSubmissionParams) (FormSubmission, error)
 	UpdateFormTemplate(ctx context.Context, arg UpdateFormTemplateParams) (FormTemplate, error)
 	UpdateOrganization(ctx context.Context, arg UpdateOrganizationParams) (Organization, error)

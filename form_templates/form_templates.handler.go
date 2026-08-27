@@ -18,6 +18,7 @@ type FormTemplateHandler interface {
 	UpdateTemplate(w http.ResponseWriter, r *http.Request)
 	DeleteTemplate(w http.ResponseWriter, r *http.Request)
 	CloneTemplateToForm(w http.ResponseWriter, r *http.Request)
+	GetTemplateDetail(w http.ResponseWriter, r *http.Request)
 }
 
 type formTemplateHandler struct {
@@ -167,15 +168,16 @@ func (h *formTemplateHandler) DeleteTemplate(w http.ResponseWriter, r *http.Requ
 // CloneTemplateToForm godoc
 //
 //	@Summary		Clone a template to a form
-//	@Description	Clones a form template into a new org form
+//	@Description	Clones a form template into a new org form with fresh sections and fields
 //	@Tags			form-templates
 //	@Accept			json
 //	@Produce		json
-//	@Param			id		path		string											true	"Template UUID"
-//	@Param			body	body		CloneTemplateDto								true	"Clone payload"
-//	@Success		201		{object}	utils.SuccessResponse{data=FormTemplateResponse}	"Form cloned successfully"
-//	@Failure		400		{object}	utils.ErrorResponse								"Bad request or validation error"
-//	@Failure		404		{object}	utils.ErrorResponse								"Template not found"
+//	@Param			id		path		string										true	"Template UUID"
+//	@Param			body	body		CloneTemplateDto							true	"Clone payload"
+//	@Success		201		{object}	utils.SuccessResponse{data=CloneFormResponse}	"Form cloned successfully"
+//	@Failure		400		{object}	utils.ErrorResponse							"Bad request or validation error"
+//	@Failure		403		{object}	utils.ErrorResponse							"Access denied"
+//	@Failure		404		{object}	utils.ErrorResponse							"Template not found"
 //	@Security		BearerAuth
 //	@Router			/api/templates/{id}/clone [post]
 func (h *formTemplateHandler) CloneTemplateToForm(w http.ResponseWriter, r *http.Request) {
@@ -190,7 +192,36 @@ func (h *formTemplateHandler) CloneTemplateToForm(w http.ResponseWriter, r *http
 		utils.ErrorJSON(w, http.StatusBadRequest, err, "VALIDATION_ERROR")
 		return
 	}
-	template, err := h.service.CloneTemplateToForm(r.Context(), id, dto, userID)
+	form, err := h.service.CloneTemplateToForm(r.Context(), id, dto, userID)
+	if err != nil {
+		if errors.Is(err, ErrTemplateNotFound) {
+			utils.ErrorJSON(w, http.StatusNotFound, err, "TEMPLATE_NOT_FOUND")
+			return
+		}
+		if errors.Is(err, ErrAccessDenied) {
+			utils.ErrorJSON(w, http.StatusForbidden, err, "FORBIDDEN")
+			return
+		}
+		utils.ErrorJSON(w, http.StatusInternalServerError, err, "INTERNAL_ERROR")
+		return
+	}
+	utils.WriteJSON(w, http.StatusCreated, "Form cloned successfully", form)
+}
+
+// GetTemplateDetail godoc
+//
+//	@Summary		Get full template with sections and fields
+//	@Description	Retrieves a template with all its sections and nested fields in one call
+//	@Tags			form-templates
+//	@Produce		json
+//	@Param			id	path		string										true	"Template UUID"
+//	@Success		200	{object}	utils.SuccessResponse{data=TemplateDetailResponse}	"Template detail retrieved successfully"
+//	@Failure		404	{object}	utils.ErrorResponse							"Template not found"
+//	@Security		BearerAuth
+//	@Router			/api/templates/{id}/detail [get]
+func (h *formTemplateHandler) GetTemplateDetail(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	detail, err := h.service.GetTemplateDetail(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, ErrTemplateNotFound) {
 			utils.ErrorJSON(w, http.StatusNotFound, err, "TEMPLATE_NOT_FOUND")
@@ -199,5 +230,5 @@ func (h *formTemplateHandler) CloneTemplateToForm(w http.ResponseWriter, r *http
 		utils.ErrorJSON(w, http.StatusInternalServerError, err, "INTERNAL_ERROR")
 		return
 	}
-	utils.WriteJSON(w, http.StatusCreated, "Form cloned successfully", template)
+	utils.WriteJSON(w, http.StatusOK, "Template detail retrieved successfully", detail)
 }

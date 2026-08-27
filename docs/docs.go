@@ -590,6 +590,129 @@ const docTemplate = `{
                 ]
             }
         },
+        "/api/forms/{formId}/sections": {
+            "get": {
+                "description": "Retrieves all sections for a form",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "form-sections"
+                ],
+                "summary": "List form sections",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Form UUID",
+                        "name": "formId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sections retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/form_sections.SectionResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "description": "Creates a new section within a form",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "form-sections"
+                ],
+                "summary": "Create a form section",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Form UUID",
+                        "name": "formId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Section payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/form_sections.CreateSectionDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Section created successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/form_sections.SectionResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/forms/{formId}/submissions": {
             "get": {
                 "description": "Retrieves all submissions for a form (org view)",
@@ -879,6 +1002,64 @@ const docTemplate = `{
                         "description": "Form deleted successfully",
                         "schema": {
                             "$ref": "#/definitions/utils.SuccessResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Form not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/forms/{id}/detail": {
+            "get": {
+                "description": "Retrieves a form with all its sections and nested fields in one call",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "forms"
+                ],
+                "summary": "Get full form with sections and fields",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Form UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Form detail retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/forms.FormDetailResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "403": {
@@ -1786,6 +1967,108 @@ const docTemplate = `{
                 ]
             }
         },
+        "/api/sections/{sectionId}": {
+            "put": {
+                "description": "Updates a form or template section",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "form-sections"
+                ],
+                "summary": "Update a section",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Section UUID",
+                        "name": "sectionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/form_sections.UpdateSectionDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Section updated successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/form_sections.SectionResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Section not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "description": "Permanently deletes a section",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "form-sections"
+                ],
+                "summary": "Delete a section",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Section UUID",
+                        "name": "sectionId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Section deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.SuccessResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Section not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/submissions/{id}": {
             "get": {
                 "description": "Retrieves a form submission by ID",
@@ -2027,6 +2310,114 @@ const docTemplate = `{
                 ]
             }
         },
+        "/api/templates/fields/{fieldId}": {
+            "put": {
+                "description": "Updates an existing template field",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "template-fields"
+                ],
+                "summary": "Update a template field",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Field UUID",
+                        "name": "fieldId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated field payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/form_templates.UpdateTemplateFieldDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Field updated successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/form_templates.TemplateFieldResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Field not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "description": "Permanently deletes a template field",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "template-fields"
+                ],
+                "summary": "Delete a template field",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Field UUID",
+                        "name": "fieldId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Field deleted successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Field not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/templates/{id}": {
             "get": {
                 "description": "Retrieves a form template by ID",
@@ -2187,7 +2578,7 @@ const docTemplate = `{
         },
         "/api/templates/{id}/clone": {
             "post": {
-                "description": "Clones a form template into a new org form",
+                "description": "Clones a form template into a new org form with fresh sections and fields",
                 "consumes": [
                     "application/json"
                 ],
@@ -2228,7 +2619,305 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/form_templates.FormTemplateResponse"
+                                            "$ref": "#/definitions/form_templates.CloneFormResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Template not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/templates/{id}/detail": {
+            "get": {
+                "description": "Retrieves a template with all its sections and nested fields in one call",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "form-templates"
+                ],
+                "summary": "Get full template with sections and fields",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Template detail retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/form_templates.TemplateDetailResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Template not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/templates/{id}/fields": {
+            "get": {
+                "description": "Retrieves all fields for a template",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "template-fields"
+                ],
+                "summary": "List template fields",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Fields retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/form_templates.TemplateFieldResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Template not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "description": "Creates a new field within a form template",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "template-fields"
+                ],
+                "summary": "Add a field to a template",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Field payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/form_templates.CreateTemplateFieldDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Field created successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/form_templates.TemplateFieldResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Template not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/templates/{id}/sections": {
+            "get": {
+                "description": "Retrieves all sections for a template",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "template-sections"
+                ],
+                "summary": "List template sections",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sections retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/form_sections.SectionResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "description": "Creates a new section within a template",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "template-sections"
+                ],
+                "summary": "Create a template section",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Template UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Section payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/form_sections.CreateSectionDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Section created successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/form_sections.SectionResponse"
                                         }
                                     }
                                 }
@@ -2748,6 +3437,75 @@ const docTemplate = `{
                 "validation": {}
             }
         },
+        "form_sections.CreateSectionDto": {
+            "type": "object",
+            "required": [
+                "title"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 1000
+                },
+                "sort_order": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                }
+            }
+        },
+        "form_sections.SectionResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "form_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
+                },
+                "template_id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "form_sections.UpdateSectionDto": {
+            "type": "object",
+            "required": [
+                "title"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 1000
+                },
+                "sort_order": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                }
+            }
+        },
         "form_submissions.CreateFormSubmissionDto": {
             "type": "object",
             "required": [
@@ -2815,6 +3573,35 @@ const docTemplate = `{
                 }
             }
         },
+        "form_templates.CloneFormResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "organization_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "template_id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "form_templates.CloneTemplateDto": {
             "type": "object",
             "required": [
@@ -2849,6 +3636,63 @@ const docTemplate = `{
                 }
             }
         },
+        "form_templates.CreateTemplateFieldDto": {
+            "type": "object",
+            "required": [
+                "field_type",
+                "key",
+                "label",
+                "section_id"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 1000
+                },
+                "field_type": {
+                    "type": "string",
+                    "enum": [
+                        "text",
+                        "textarea",
+                        "number",
+                        "email",
+                        "phone",
+                        "date",
+                        "checkbox",
+                        "radio",
+                        "select",
+                        "multiselect",
+                        "file",
+                        "richtext"
+                    ]
+                },
+                "is_required": {
+                    "type": "boolean"
+                },
+                "key": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                },
+                "label": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
+                "options": {},
+                "placeholder": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "section_id": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
+                },
+                "validation": {}
+            }
+        },
         "form_templates.FormTemplateResponse": {
             "type": "object",
             "properties": {
@@ -2872,6 +3716,146 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "form_templates.SectionDetailResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
+                },
+                "template_id": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "form_templates.TemplateDetailResponse": {
+            "type": "object",
+            "properties": {
+                "sections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/form_templates.TemplateSectionWithFields"
+                    }
+                },
+                "template": {
+                    "$ref": "#/definitions/form_templates.FormTemplateResponse"
+                }
+            }
+        },
+        "form_templates.TemplateFieldDetail": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "field_type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_required": {
+                    "type": "boolean"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "options": {},
+                "placeholder": {
+                    "type": "string"
+                },
+                "section_id": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
+                },
+                "template_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "validation": {}
+            }
+        },
+        "form_templates.TemplateFieldResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "field_type": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_required": {
+                    "type": "boolean"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "options": {},
+                "placeholder": {
+                    "type": "string"
+                },
+                "section_id": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
+                },
+                "template_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "validation": {}
+            }
+        },
+        "form_templates.TemplateSectionWithFields": {
+            "type": "object",
+            "properties": {
+                "fields": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/form_templates.TemplateFieldDetail"
+                    }
+                },
+                "section": {
+                    "$ref": "#/definitions/form_templates.SectionDetailResponse"
                 }
             }
         },
@@ -2899,6 +3883,59 @@ const docTemplate = `{
                 }
             }
         },
+        "form_templates.UpdateTemplateFieldDto": {
+            "type": "object",
+            "required": [
+                "field_type",
+                "key",
+                "label"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 1000
+                },
+                "field_type": {
+                    "type": "string",
+                    "enum": [
+                        "text",
+                        "textarea",
+                        "number",
+                        "email",
+                        "phone",
+                        "date",
+                        "checkbox",
+                        "radio",
+                        "select",
+                        "multiselect",
+                        "file",
+                        "richtext"
+                    ]
+                },
+                "is_required": {
+                    "type": "boolean"
+                },
+                "key": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                },
+                "label": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
+                "options": {},
+                "placeholder": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "sort_order": {
+                    "type": "integer"
+                },
+                "validation": {}
+            }
+        },
         "forms.CreateFormDto": {
             "type": "object",
             "required": [
@@ -2917,6 +3954,63 @@ const docTemplate = `{
                     "maxLength": 255,
                     "minLength": 2
                 }
+            }
+        },
+        "forms.FormDetailResponse": {
+            "type": "object",
+            "properties": {
+                "form": {
+                    "$ref": "#/definitions/forms.FormResponse"
+                },
+                "sections": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/forms.FormSectionWithFields"
+                    }
+                }
+            }
+        },
+        "forms.FormFieldDetail": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "field_type": {
+                    "type": "string"
+                },
+                "form_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_required": {
+                    "type": "boolean"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "options": {},
+                "placeholder": {
+                    "type": "string"
+                },
+                "section_id": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "validation": {}
             }
         },
         "forms.FormResponse": {
@@ -2939,6 +4033,46 @@ const docTemplate = `{
                 },
                 "template_id": {
                     "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "forms.FormSectionWithFields": {
+            "type": "object",
+            "properties": {
+                "fields": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/forms.FormFieldDetail"
+                    }
+                },
+                "section": {
+                    "$ref": "#/definitions/forms.SectionDetailResponse"
+                }
+            }
+        },
+        "forms.SectionDetailResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "form_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "sort_order": {
+                    "type": "integer"
                 },
                 "title": {
                     "type": "string"

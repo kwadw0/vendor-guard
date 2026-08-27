@@ -69,7 +69,7 @@ type Form struct {
 
 type FormField struct {
 	ID          uuid.UUID          `json:"id"`
-	FormID      uuid.UUID          `json:"form_id"`
+	FormID      pgtype.UUID        `json:"form_id"`
 	SectionID   uuid.UUID          `json:"section_id"`
 	FieldType   string             `json:"field_type"`
 	Label       string             `json:"label"`
@@ -82,16 +82,18 @@ type FormField struct {
 	Options     []byte             `json:"options"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	TemplateID  pgtype.UUID        `json:"template_id"`
 }
 
 type FormSection struct {
 	ID          uuid.UUID          `json:"id"`
-	FormID      uuid.UUID          `json:"form_id"`
+	FormID      pgtype.UUID        `json:"form_id"`
 	Title       string             `json:"title"`
 	Description pgtype.Text        `json:"description"`
 	SortOrder   int32              `json:"sort_order"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	TemplateID  pgtype.UUID        `json:"template_id"`
 }
 
 type FormSubmission struct {

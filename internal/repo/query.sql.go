@@ -107,6 +107,7 @@ const createFormField = `-- name: CreateFormField :one
 
 INSERT INTO form_fields (
   form_id,
+  template_id,
   section_id,
   field_type,
   label,
@@ -128,12 +129,14 @@ INSERT INTO form_fields (
   $8,
   $9,
   $10,
-  $11
-) RETURNING id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at
+  $11,
+  $12
+) RETURNING id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at, template_id
 `
 
 type CreateFormFieldParams struct {
-	FormID      uuid.UUID   `json:"form_id"`
+	FormID      pgtype.UUID `json:"form_id"`
+	TemplateID  pgtype.UUID `json:"template_id"`
 	SectionID   uuid.UUID   `json:"section_id"`
 	FieldType   string      `json:"field_type"`
 	Label       string      `json:"label"`
@@ -152,6 +155,7 @@ type CreateFormFieldParams struct {
 func (q *Queries) CreateFormField(ctx context.Context, arg CreateFormFieldParams) (FormField, error) {
 	row := q.db.QueryRow(ctx, createFormField,
 		arg.FormID,
+		arg.TemplateID,
 		arg.SectionID,
 		arg.FieldType,
 		arg.Label,
@@ -179,6 +183,53 @@ func (q *Queries) CreateFormField(ctx context.Context, arg CreateFormFieldParams
 		&i.Options,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.TemplateID,
+	)
+	return i, err
+}
+
+const createFormSection = `-- name: CreateFormSection :one
+
+INSERT INTO form_sections (
+  form_id,
+  template_id,
+  title,
+  description,
+  sort_order
+) VALUES (
+  $1, $2, $3, $4, $5
+) RETURNING id, form_id, title, description, sort_order, created_at, updated_at, template_id
+`
+
+type CreateFormSectionParams struct {
+	FormID      pgtype.UUID `json:"form_id"`
+	TemplateID  pgtype.UUID `json:"template_id"`
+	Title       string      `json:"title"`
+	Description pgtype.Text `json:"description"`
+	SortOrder   int32       `json:"sort_order"`
+}
+
+// ============================================================
+// FORM SECTIONS
+// ============================================================
+func (q *Queries) CreateFormSection(ctx context.Context, arg CreateFormSectionParams) (FormSection, error) {
+	row := q.db.QueryRow(ctx, createFormSection,
+		arg.FormID,
+		arg.TemplateID,
+		arg.Title,
+		arg.Description,
+		arg.SortOrder,
+	)
+	var i FormSection
+	err := row.Scan(
+		&i.ID,
+		&i.FormID,
+		&i.Title,
+		&i.Description,
+		&i.SortOrder,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.TemplateID,
 	)
 	return i, err
 }
@@ -536,6 +587,15 @@ func (q *Queries) DeleteFormField(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteFormSection = `-- name: DeleteFormSection :exec
+DELETE FROM form_sections WHERE id = $1
+`
+
+func (q *Queries) DeleteFormSection(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteFormSection, id)
+	return err
+}
+
 const deleteFormTemplate = `-- name: DeleteFormTemplate :exec
 DELETE FROM form_templates WHERE id = $1
 `
@@ -716,7 +776,7 @@ func (q *Queries) GetFormByID(ctx context.Context, id uuid.UUID) (Form, error) {
 }
 
 const getFormFieldByID = `-- name: GetFormFieldByID :one
-SELECT id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at FROM form_fields WHERE id = $1
+SELECT id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at, template_id FROM form_fields WHERE id = $1
 `
 
 func (q *Queries) GetFormFieldByID(ctx context.Context, id uuid.UUID) (FormField, error) {
@@ -737,17 +797,18 @@ func (q *Queries) GetFormFieldByID(ctx context.Context, id uuid.UUID) (FormField
 		&i.Options,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.TemplateID,
 	)
 	return i, err
 }
 
 const getFormFieldsByFormID = `-- name: GetFormFieldsByFormID :many
-SELECT id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at FROM form_fields
+SELECT id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at, template_id FROM form_fields
 WHERE form_id = $1
 ORDER BY sort_order ASC
 `
 
-func (q *Queries) GetFormFieldsByFormID(ctx context.Context, formID uuid.UUID) ([]FormField, error) {
+func (q *Queries) GetFormFieldsByFormID(ctx context.Context, formID pgtype.UUID) ([]FormField, error) {
 	rows, err := q.db.Query(ctx, getFormFieldsByFormID, formID)
 	if err != nil {
 		return nil, err
@@ -771,6 +832,7 @@ func (q *Queries) GetFormFieldsByFormID(ctx context.Context, formID uuid.UUID) (
 			&i.Options,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.TemplateID,
 		); err != nil {
 			return nil, err
 		}
@@ -783,7 +845,7 @@ func (q *Queries) GetFormFieldsByFormID(ctx context.Context, formID uuid.UUID) (
 }
 
 const getFormFieldsBySectionID = `-- name: GetFormFieldsBySectionID :many
-SELECT id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at FROM form_fields
+SELECT id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at, template_id FROM form_fields
 WHERE section_id = $1
 ORDER BY sort_order ASC
 `
@@ -812,6 +874,62 @@ func (q *Queries) GetFormFieldsBySectionID(ctx context.Context, sectionID uuid.U
 			&i.Options,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.TemplateID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getFormSectionByID = `-- name: GetFormSectionByID :one
+SELECT id, form_id, title, description, sort_order, created_at, updated_at, template_id FROM form_sections WHERE id = $1
+`
+
+func (q *Queries) GetFormSectionByID(ctx context.Context, id uuid.UUID) (FormSection, error) {
+	row := q.db.QueryRow(ctx, getFormSectionByID, id)
+	var i FormSection
+	err := row.Scan(
+		&i.ID,
+		&i.FormID,
+		&i.Title,
+		&i.Description,
+		&i.SortOrder,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.TemplateID,
+	)
+	return i, err
+}
+
+const getFormSectionsByFormID = `-- name: GetFormSectionsByFormID :many
+SELECT id, form_id, title, description, sort_order, created_at, updated_at, template_id FROM form_sections
+WHERE form_id = $1
+ORDER BY sort_order ASC
+`
+
+func (q *Queries) GetFormSectionsByFormID(ctx context.Context, formID pgtype.UUID) ([]FormSection, error) {
+	rows, err := q.db.Query(ctx, getFormSectionsByFormID, formID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FormSection
+	for rows.Next() {
+		var i FormSection
+		if err := rows.Scan(
+			&i.ID,
+			&i.FormID,
+			&i.Title,
+			&i.Description,
+			&i.SortOrder,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.TemplateID,
 		); err != nil {
 			return nil, err
 		}
@@ -1192,6 +1310,83 @@ func (q *Queries) GetRoleByName(ctx context.Context, name string) (Role, error) 
 	return i, err
 }
 
+const getTemplateFieldsByTemplateID = `-- name: GetTemplateFieldsByTemplateID :many
+SELECT id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at, template_id FROM form_fields
+WHERE template_id = $1
+ORDER BY sort_order ASC
+`
+
+func (q *Queries) GetTemplateFieldsByTemplateID(ctx context.Context, templateID pgtype.UUID) ([]FormField, error) {
+	rows, err := q.db.Query(ctx, getTemplateFieldsByTemplateID, templateID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FormField
+	for rows.Next() {
+		var i FormField
+		if err := rows.Scan(
+			&i.ID,
+			&i.FormID,
+			&i.SectionID,
+			&i.FieldType,
+			&i.Label,
+			&i.Key,
+			&i.Description,
+			&i.Placeholder,
+			&i.IsRequired,
+			&i.SortOrder,
+			&i.Validation,
+			&i.Options,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.TemplateID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTemplateSectionsByTemplateID = `-- name: GetTemplateSectionsByTemplateID :many
+SELECT id, form_id, title, description, sort_order, created_at, updated_at, template_id FROM form_sections
+WHERE template_id = $1
+ORDER BY sort_order ASC
+`
+
+func (q *Queries) GetTemplateSectionsByTemplateID(ctx context.Context, templateID pgtype.UUID) ([]FormSection, error) {
+	rows, err := q.db.Query(ctx, getTemplateSectionsByTemplateID, templateID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FormSection
+	for rows.Next() {
+		var i FormSection
+		if err := rows.Scan(
+			&i.ID,
+			&i.FormID,
+			&i.Title,
+			&i.Description,
+			&i.SortOrder,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.TemplateID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, partner_id FROM users WHERE email = $1
 `
@@ -1457,7 +1652,7 @@ UPDATE form_fields SET
   validation = $9,
   options = $10
 WHERE id = $1
-RETURNING id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at
+RETURNING id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at, template_id
 `
 
 type UpdateFormFieldParams struct {
@@ -1502,6 +1697,44 @@ func (q *Queries) UpdateFormField(ctx context.Context, arg UpdateFormFieldParams
 		&i.Options,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.TemplateID,
+	)
+	return i, err
+}
+
+const updateFormSection = `-- name: UpdateFormSection :one
+UPDATE form_sections SET
+  title = $2,
+  description = $3,
+  sort_order = $4
+WHERE id = $1
+RETURNING id, form_id, title, description, sort_order, created_at, updated_at, template_id
+`
+
+type UpdateFormSectionParams struct {
+	ID          uuid.UUID   `json:"id"`
+	Title       string      `json:"title"`
+	Description pgtype.Text `json:"description"`
+	SortOrder   int32       `json:"sort_order"`
+}
+
+func (q *Queries) UpdateFormSection(ctx context.Context, arg UpdateFormSectionParams) (FormSection, error) {
+	row := q.db.QueryRow(ctx, updateFormSection,
+		arg.ID,
+		arg.Title,
+		arg.Description,
+		arg.SortOrder,
+	)
+	var i FormSection
+	err := row.Scan(
+		&i.ID,
+		&i.FormID,
+		&i.Title,
+		&i.Description,
+		&i.SortOrder,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.TemplateID,
 	)
 	return i, err
 }

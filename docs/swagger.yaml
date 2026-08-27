@@ -160,6 +160,53 @@ definitions:
     - key
     - label
     type: object
+  form_sections.CreateSectionDto:
+    properties:
+      description:
+        maxLength: 1000
+        type: string
+      sort_order:
+        type: integer
+      title:
+        maxLength: 255
+        minLength: 1
+        type: string
+    required:
+    - title
+    type: object
+  form_sections.SectionResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      form_id:
+        type: string
+      id:
+        type: string
+      sort_order:
+        type: integer
+      template_id:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  form_sections.UpdateSectionDto:
+    properties:
+      description:
+        maxLength: 1000
+        type: string
+      sort_order:
+        type: integer
+      title:
+        maxLength: 255
+        minLength: 1
+        type: string
+    required:
+    - title
+    type: object
   form_submissions.CreateFormSubmissionDto:
     properties:
       responses:
@@ -205,6 +252,25 @@ definitions:
     required:
     - status
     type: object
+  form_templates.CloneFormResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      organization_id:
+        type: string
+      status:
+        type: string
+      template_id:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
   form_templates.CloneTemplateDto:
     properties:
       title:
@@ -229,6 +295,51 @@ definitions:
     required:
     - title
     type: object
+  form_templates.CreateTemplateFieldDto:
+    properties:
+      description:
+        maxLength: 1000
+        type: string
+      field_type:
+        enum:
+        - text
+        - textarea
+        - number
+        - email
+        - phone
+        - date
+        - checkbox
+        - radio
+        - select
+        - multiselect
+        - file
+        - richtext
+        type: string
+      is_required:
+        type: boolean
+      key:
+        maxLength: 100
+        minLength: 1
+        type: string
+      label:
+        maxLength: 255
+        minLength: 1
+        type: string
+      options: {}
+      placeholder:
+        maxLength: 255
+        type: string
+      section_id:
+        type: string
+      sort_order:
+        type: integer
+      validation: {}
+    required:
+    - field_type
+    - key
+    - label
+    - section_id
+    type: object
   form_templates.FormTemplateResponse:
     properties:
       category:
@@ -245,6 +356,99 @@ definitions:
         type: string
       updated_at:
         type: string
+    type: object
+  form_templates.SectionDetailResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      sort_order:
+        type: integer
+      template_id:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  form_templates.TemplateDetailResponse:
+    properties:
+      sections:
+        items:
+          $ref: '#/definitions/form_templates.TemplateSectionWithFields'
+        type: array
+      template:
+        $ref: '#/definitions/form_templates.FormTemplateResponse'
+    type: object
+  form_templates.TemplateFieldDetail:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      field_type:
+        type: string
+      id:
+        type: string
+      is_required:
+        type: boolean
+      key:
+        type: string
+      label:
+        type: string
+      options: {}
+      placeholder:
+        type: string
+      section_id:
+        type: string
+      sort_order:
+        type: integer
+      template_id:
+        type: string
+      updated_at:
+        type: string
+      validation: {}
+    type: object
+  form_templates.TemplateFieldResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      field_type:
+        type: string
+      id:
+        type: string
+      is_required:
+        type: boolean
+      key:
+        type: string
+      label:
+        type: string
+      options: {}
+      placeholder:
+        type: string
+      section_id:
+        type: string
+      sort_order:
+        type: integer
+      template_id:
+        type: string
+      updated_at:
+        type: string
+      validation: {}
+    type: object
+  form_templates.TemplateSectionWithFields:
+    properties:
+      fields:
+        items:
+          $ref: '#/definitions/form_templates.TemplateFieldDetail'
+        type: array
+      section:
+        $ref: '#/definitions/form_templates.SectionDetailResponse'
     type: object
   form_templates.UpdateFormTemplateDto:
     properties:
@@ -263,6 +467,48 @@ definitions:
     required:
     - title
     type: object
+  form_templates.UpdateTemplateFieldDto:
+    properties:
+      description:
+        maxLength: 1000
+        type: string
+      field_type:
+        enum:
+        - text
+        - textarea
+        - number
+        - email
+        - phone
+        - date
+        - checkbox
+        - radio
+        - select
+        - multiselect
+        - file
+        - richtext
+        type: string
+      is_required:
+        type: boolean
+      key:
+        maxLength: 100
+        minLength: 1
+        type: string
+      label:
+        maxLength: 255
+        minLength: 1
+        type: string
+      options: {}
+      placeholder:
+        maxLength: 255
+        type: string
+      sort_order:
+        type: integer
+      validation: {}
+    required:
+    - field_type
+    - key
+    - label
+    type: object
   forms.CreateFormDto:
     properties:
       description:
@@ -276,6 +522,44 @@ definitions:
         type: string
     required:
     - title
+    type: object
+  forms.FormDetailResponse:
+    properties:
+      form:
+        $ref: '#/definitions/forms.FormResponse'
+      sections:
+        items:
+          $ref: '#/definitions/forms.FormSectionWithFields'
+        type: array
+    type: object
+  forms.FormFieldDetail:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      field_type:
+        type: string
+      form_id:
+        type: string
+      id:
+        type: string
+      is_required:
+        type: boolean
+      key:
+        type: string
+      label:
+        type: string
+      options: {}
+      placeholder:
+        type: string
+      section_id:
+        type: string
+      sort_order:
+        type: integer
+      updated_at:
+        type: string
+      validation: {}
     type: object
   forms.FormResponse:
     properties:
@@ -291,6 +575,32 @@ definitions:
         type: string
       template_id:
         type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  forms.FormSectionWithFields:
+    properties:
+      fields:
+        items:
+          $ref: '#/definitions/forms.FormFieldDetail'
+        type: array
+      section:
+        $ref: '#/definitions/forms.SectionDetailResponse'
+    type: object
+  forms.SectionDetailResponse:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      form_id:
+        type: string
+      id:
+        type: string
+      sort_order:
+        type: integer
       title:
         type: string
       updated_at:
@@ -939,6 +1249,79 @@ paths:
       summary: Update a form field
       tags:
       - form-fields
+  /api/forms/{formId}/sections:
+    get:
+      description: Retrieves all sections for a form
+      parameters:
+      - description: Form UUID
+        in: path
+        name: formId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sections retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/form_sections.SectionResponse'
+                  type: array
+              type: object
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List form sections
+      tags:
+      - form-sections
+    post:
+      consumes:
+      - application/json
+      description: Creates a new section within a form
+      parameters:
+      - description: Form UUID
+        in: path
+        name: formId
+        required: true
+        type: string
+      - description: Section payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/form_sections.CreateSectionDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Section created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/form_sections.SectionResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a form section
+      tags:
+      - form-sections
   /api/forms/{formId}/submissions:
     get:
       description: Retrieves all submissions for a form (org view)
@@ -1125,6 +1508,41 @@ paths:
       security:
       - BearerAuth: []
       summary: Update a form
+      tags:
+      - forms
+  /api/forms/{id}/detail:
+    get:
+      description: Retrieves a form with all its sections and nested fields in one
+        call
+      parameters:
+      - description: Form UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Form detail retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/forms.FormDetailResponse'
+              type: object
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Form not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get full form with sections and fields
       tags:
       - forms
   /api/organizations:
@@ -1659,6 +2077,68 @@ paths:
       summary: Accept a partner invitation
       tags:
       - partners
+  /api/sections/{sectionId}:
+    delete:
+      description: Permanently deletes a section
+      parameters:
+      - description: Section UUID
+        in: path
+        name: sectionId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Section deleted successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "404":
+          description: Section not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a section
+      tags:
+      - form-sections
+    put:
+      consumes:
+      - application/json
+      description: Updates a form or template section
+      parameters:
+      - description: Section UUID
+        in: path
+        name: sectionId
+        required: true
+        type: string
+      - description: Updated payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/form_sections.UpdateSectionDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Section updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/form_sections.SectionResponse'
+              type: object
+        "404":
+          description: Section not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a section
+      tags:
+      - form-sections
   /api/submissions/{id}:
     get:
       description: Retrieves a form submission by ID
@@ -1900,7 +2380,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Clones a form template into a new org form
+      description: Clones a form template into a new org form with fresh sections
+        and fields
       parameters:
       - description: Template UUID
         in: path
@@ -1923,10 +2404,14 @@ paths:
             - $ref: '#/definitions/utils.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/form_templates.FormTemplateResponse'
+                  $ref: '#/definitions/form_templates.CloneFormResponse'
               type: object
         "400":
           description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Access denied
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
         "404":
@@ -1938,6 +2423,245 @@ paths:
       summary: Clone a template to a form
       tags:
       - form-templates
+  /api/templates/{id}/detail:
+    get:
+      description: Retrieves a template with all its sections and nested fields in
+        one call
+      parameters:
+      - description: Template UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Template detail retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/form_templates.TemplateDetailResponse'
+              type: object
+        "404":
+          description: Template not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get full template with sections and fields
+      tags:
+      - form-templates
+  /api/templates/{id}/fields:
+    get:
+      description: Retrieves all fields for a template
+      parameters:
+      - description: Template UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Fields retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/form_templates.TemplateFieldResponse'
+                  type: array
+              type: object
+        "404":
+          description: Template not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List template fields
+      tags:
+      - template-fields
+    post:
+      consumes:
+      - application/json
+      description: Creates a new field within a form template
+      parameters:
+      - description: Template UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Field payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/form_templates.CreateTemplateFieldDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Field created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/form_templates.TemplateFieldResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Template not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add a field to a template
+      tags:
+      - template-fields
+  /api/templates/{id}/sections:
+    get:
+      description: Retrieves all sections for a template
+      parameters:
+      - description: Template UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Sections retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/form_sections.SectionResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List template sections
+      tags:
+      - template-sections
+    post:
+      consumes:
+      - application/json
+      description: Creates a new section within a template
+      parameters:
+      - description: Template UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Section payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/form_sections.CreateSectionDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Section created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/form_sections.SectionResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Template not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a template section
+      tags:
+      - template-sections
+  /api/templates/fields/{fieldId}:
+    delete:
+      description: Permanently deletes a template field
+      parameters:
+      - description: Field UUID
+        in: path
+        name: fieldId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Field deleted successfully
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Field not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a template field
+      tags:
+      - template-fields
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing template field
+      parameters:
+      - description: Field UUID
+        in: path
+        name: fieldId
+        required: true
+        type: string
+      - description: Updated field payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/form_templates.UpdateTemplateFieldDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Field updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/form_templates.TemplateFieldResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Field not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a template field
+      tags:
+      - template-fields
   /api/users:
     get:
       description: Retrieve a list of all users

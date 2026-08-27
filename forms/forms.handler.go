@@ -17,6 +17,7 @@ type FormHandler interface {
 	GetFormsByOrg(w http.ResponseWriter, r *http.Request)
 	UpdateForm(w http.ResponseWriter, r *http.Request)
 	DeleteForm(w http.ResponseWriter, r *http.Request)
+	GetFormDetail(w http.ResponseWriter, r *http.Request)
 }
 
 type formHandler struct {
@@ -195,4 +196,35 @@ func (h *formHandler) DeleteForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, "Form deleted successfully", nil)
+}
+
+// GetFormDetail godoc
+//
+//	@Summary		Get full form with sections and fields
+//	@Description	Retrieves a form with all its sections and nested fields in one call
+//	@Tags			forms
+//	@Produce		json
+//	@Param			id	path		string								true	"Form UUID"
+//	@Success		200	{object}	utils.SuccessResponse{data=FormDetailResponse}	"Form detail retrieved successfully"
+//	@Failure		403	{object}	utils.ErrorResponse					"Access denied"
+//	@Failure		404	{object}	utils.ErrorResponse					"Form not found"
+//	@Security		BearerAuth
+//	@Router			/api/forms/{id}/detail [get]
+func (h *formHandler) GetFormDetail(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
+	id := chi.URLParam(r, "id")
+	detail, err := h.service.GetFormDetail(r.Context(), id, userID)
+	if err != nil {
+		if errors.Is(err, ErrAccessDenied) {
+			utils.ErrorJSON(w, http.StatusForbidden, err, "FORBIDDEN")
+			return
+		}
+		if errors.Is(err, ErrFormNotFound) {
+			utils.ErrorJSON(w, http.StatusNotFound, err, "FORM_NOT_FOUND")
+			return
+		}
+		utils.ErrorJSON(w, http.StatusInternalServerError, err, "INTERNAL_ERROR")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, "Form detail retrieved successfully", detail)
 }

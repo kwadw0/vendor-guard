@@ -2,6 +2,7 @@ package forms
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -20,6 +21,7 @@ type FormService interface {
 	GetFormsByOrg(ctx context.Context, userID string) ([]FormResponse, error)
 	UpdateForm(ctx context.Context, id string, dto UpdateFormDto, userID string) (FormResponse, error)
 	DeleteForm(ctx context.Context, id string, userID string) error
+	GetFormDetail(ctx context.Context, id string, userID string) (FormDetailResponse, error)
 }
 
 type formService struct {
@@ -190,11 +192,112 @@ func (s *formService) DeleteForm(ctx context.Context, id string, userID string) 
 	return s.repo.DeleteForm(ctx, formUUID)
 }
 
+func (s *formService) GetFormDetail(ctx context.Context, id string, userID string) (FormDetailResponse, error) {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return FormDetailResponse{}, err
+	}
+	formUUID, err := uuid.Parse(id)
+	if err != nil {
+		return FormDetailResponse{}, err
+	}
+	org, err := s.repo.GetOrganizationByUserID(ctx, userUUID)
+	if err != nil {
+		return FormDetailResponse{}, ErrAccessDenied
+	}
+	form, err := s.repo.GetFormByID(ctx, formUUID)
+	if err != nil {
+		return FormDetailResponse{}, ErrFormNotFound
+	}
+	if form.OrganizationID != org.ID {
+		return FormDetailResponse{}, ErrAccessDenied
+	}
+	sections, err := s.repo.GetFormSectionsByFormID(ctx, pgtype.UUID{Bytes: formUUID, Valid: true})
+	if err != nil {
+		return FormDetailResponse{}, err
+	}
+	fields, err := s.repo.GetFormFieldsByFormID(ctx, pgtype.UUID{Bytes: formUUID, Valid: true})
+	if err != nil {
+		return FormDetailResponse{}, err
+	}
+	fieldsBySection := make(map[uuid.UUID][]FormFieldDetail, len(sections))
+	for _, f := range fields {
+		fieldsBySection[f.SectionID] = append(fieldsBySection[f.SectionID], mapFormFieldToDetail(f))
+	}
+	detailSections := make([]FormSectionWithFields, 0, len(sections))
+	for _, sec := range sections {
+		detailSections = append(detailSections, FormSectionWithFields{
+			Section: mapFormSectionToDetail(sec),
+			Fields:  fieldsBySection[sec.ID],
+		})
+	}
+	for i := range detailSections {
+		if detailSections[i].Fields == nil {
+			detailSections[i].Fields = []FormFieldDetail{}
+		}
+	}
+	return FormDetailResponse{
+		Form:     mapFormToResponse(form),
+		Sections: detailSections,
+	}, nil
+}
+
+func mapFormSectionToDetail(s repo.FormSection) SectionDetailResponse {
+	formID := ""
+	if s.FormID.Valid {
+		formID = uuid.UUID(s.FormID.Bytes).String()
+	}
+	return SectionDetailResponse{
+		ID:          s.ID.String(),
+		FormID:      formID,
+		Title:       s.Title,
+		Description: s.Description.String,
+		SortOrder:   int(s.SortOrder),
+		CreatedAt:   s.CreatedAt.Time.Format(time.RFC3339),
+		UpdatedAt:   s.UpdatedAt.Time.Format(time.RFC3339),
+	}
+}
+
+func mapFormFieldToDetail(f repo.FormField) FormFieldDetail {
+	var validation interface{}
+	if f.Validation != nil {
+		_ = json.Unmarshal(f.Validation, &validation)
+	}
+	var options interface{}
+	if f.Options != nil {
+		_ = json.Unmarshal(f.Options, &options)
+	}
+	formID := ""
+	if f.FormID.Valid {
+		formID = uuid.UUID(f.FormID.Bytes).String()
+	}
+	return FormFieldDetail{
+		ID:          f.ID.String(),
+		FormID:      formID,
+		SectionID:   f.SectionID.String(),
+		FieldType:   f.FieldType,
+		Label:       f.Label,
+		Key:         f.Key,
+		Description: f.Description.String,
+		Placeholder: f.Placeholder.String,
+		IsRequired:  f.IsRequired,
+		SortOrder:   int(f.SortOrder),
+		Validation:  validation,
+		Options:     options,
+		CreatedAt:   f.CreatedAt.Time.Format(time.RFC3339),
+		UpdatedAt:   f.UpdatedAt.Time.Format(time.RFC3339),
+	}
+}
+
 func mapFormToResponse(f repo.Form) FormResponse {
+	templateID := ""
+	if f.TemplateID.Valid {
+		templateID = uuid.UUID(f.TemplateID.Bytes).String()
+	}
 	return FormResponse{
 		ID:             f.ID.String(),
 		OrganizationID: f.OrganizationID.String(),
-		TemplateID:     uuid.UUID(f.TemplateID.Bytes).String(),
+		TemplateID:     templateID,
 		Title:          f.Title,
 		Description:    f.Description.String,
 		Status:         f.Status,

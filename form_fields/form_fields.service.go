@@ -77,12 +77,21 @@ func (s *formFieldService) CreateField(ctx context.Context, formID string, dto C
 		}
 	}
 
+	section, err := s.repo.GetFormSectionByID(ctx, sectionUUID)
+	if err != nil {
+		return FormFieldResponse{}, ErrFieldNotFound
+	}
+	if !section.FormID.Valid || section.FormID.Bytes != formUUID {
+		return FormFieldResponse{}, ErrFieldNotFound
+	}
+
 	field, err := s.repo.CreateFormField(ctx, repo.CreateFormFieldParams{
-		FormID:    formUUID,
-		SectionID: sectionUUID,
-		FieldType: dto.FieldType,
-		Label:     dto.Label,
-		Key:       dto.Key,
+		FormID:     pgtype.UUID{Bytes: formUUID, Valid: true},
+		TemplateID: pgtype.UUID{Valid: false},
+		SectionID:  sectionUUID,
+		FieldType:  dto.FieldType,
+		Label:      dto.Label,
+		Key:        dto.Key,
 		Description: pgtype.Text{
 			String: dto.Description,
 			Valid:  dto.Description != "",
@@ -127,7 +136,7 @@ func (s *formFieldService) GetFieldsByFormID(ctx context.Context, formID string,
 		return nil, ErrAccessDenied
 	}
 
-	fields, err := s.repo.GetFormFieldsByFormID(ctx, formUUID)
+	fields, err := s.repo.GetFormFieldsByFormID(ctx, pgtype.UUID{Bytes: formUUID, Valid: true})
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +169,11 @@ func (s *formFieldService) UpdateField(ctx context.Context, fieldID string, dto 
 		return FormFieldResponse{}, ErrFieldNotFound
 	}
 
-	form, err := s.repo.GetFormByID(ctx, field.FormID)
+	if !field.FormID.Valid {
+		return FormFieldResponse{}, ErrFieldNotFound
+	}
+
+	form, err := s.repo.GetFormByID(ctx, uuid.UUID(field.FormID.Bytes))
 	if err != nil {
 		return FormFieldResponse{}, ErrFieldNotFound
 	}
@@ -230,7 +243,11 @@ func (s *formFieldService) DeleteField(ctx context.Context, fieldID string, user
 		return ErrFieldNotFound
 	}
 
-	form, err := s.repo.GetFormByID(ctx, field.FormID)
+	if !field.FormID.Valid {
+		return ErrFieldNotFound
+	}
+
+	form, err := s.repo.GetFormByID(ctx, uuid.UUID(field.FormID.Bytes))
 	if err != nil {
 		return ErrFieldNotFound
 	}
@@ -253,9 +270,14 @@ func mapFieldToResponse(f repo.FormField) FormFieldResponse {
 		_ = json.Unmarshal(f.Options, &options)
 	}
 
+	formID := ""
+	if f.FormID.Valid {
+		formID = uuid.UUID(f.FormID.Bytes).String()
+	}
+
 	return FormFieldResponse{
 		ID:          f.ID.String(),
-		FormID:      f.FormID.String(),
+		FormID:      formID,
 		SectionID:   f.SectionID.String(),
 		FieldType:   f.FieldType,
 		Label:       f.Label,

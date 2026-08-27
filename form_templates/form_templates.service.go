@@ -2,6 +2,7 @@ package form_templates
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -9,9 +10,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var ErrTemplateNotFound = errors.New("template not found")
+var ErrAccessDenied = errors.New("access denied")
 
 type FormTemplateService interface {
 	CreateTemplate(ctx context.Context, dto CreateFormTemplateDto) (FormTemplateResponse, error)
@@ -19,15 +22,21 @@ type FormTemplateService interface {
 	GetAllTemplates(ctx context.Context) ([]FormTemplateResponse, error)
 	UpdateTemplate(ctx context.Context, id string, dto UpdateFormTemplateDto) (FormTemplateResponse, error)
 	DeleteTemplate(ctx context.Context, id string) error
-	CloneTemplateToForm(ctx context.Context, templateID string, dto CloneTemplateDto, userID string) (FormTemplateResponse, error)
+	CloneTemplateToForm(ctx context.Context, templateID string, dto CloneTemplateDto, userID string) (CloneFormResponse, error)
+	GetTemplateDetail(ctx context.Context, id string) (TemplateDetailResponse, error)
 }
 
 type formTemplateService struct {
 	repo *repo.Queries
+	pool *pgxpool.Pool
 }
 
 func NewService(queries *repo.Queries) FormTemplateService {
 	return &formTemplateService{repo: queries}
+}
+
+func NewServiceWithPool(pool *pgxpool.Pool, queries *repo.Queries) FormTemplateService {
+	return &formTemplateService{repo: queries, pool: pool}
 }
 
 func (s *formTemplateService) CreateTemplate(ctx context.Context, dto CreateFormTemplateDto) (FormTemplateResponse, error) {
@@ -104,38 +113,252 @@ func (s *formTemplateService) DeleteTemplate(ctx context.Context, id string) err
 	return s.repo.DeleteFormTemplate(ctx, templateUUID)
 }
 
-func (s *formTemplateService) CloneTemplateToForm(ctx context.Context, templateID string, dto CloneTemplateDto, userID string) (FormTemplateResponse, error) {
+func (s *formTemplateService) CloneTemplateToForm(ctx context.Context, templateID string, dto CloneTemplateDto, userID string) (CloneFormResponse, error) {
 	userUUID, err := uuid.Parse(userID)
 	if err != nil {
-		return FormTemplateResponse{}, err
+		return CloneFormResponse{}, err
 	}
 
 	org, err := s.repo.GetOrganizationByUserID(ctx, userUUID)
 	if err != nil {
-		return FormTemplateResponse{}, ErrTemplateNotFound
+		return CloneFormResponse{}, ErrAccessDenied
 	}
 
 	templateUUID, err := uuid.Parse(templateID)
 	if err != nil {
-		return FormTemplateResponse{}, err
+		return CloneFormResponse{}, err
 	}
 
-	_, err = s.repo.CloneTemplateToForm(ctx, repo.CloneTemplateToFormParams{
+	// Verify template exists
+	if _, err := s.repo.GetFormTemplateByID(ctx, templateUUID); err != nil {
+		return CloneFormResponse{}, ErrTemplateNotFound
+	}
+
+	// Use transaction if pool is available, otherwise fallback to non-transactional
+	if s.pool == nil {
+		return s.cloneWithoutTx(ctx, templateUUID, org.ID, dto)
+	}
+
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return CloneFormResponse{}, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	qtx := s.repo.WithTx(tx)
+
+	form, err := qtx.CloneTemplateToForm(ctx, repo.CloneTemplateToFormParams{
 		OrganizationID: org.ID,
-		TemplateID: pgtype.UUID{
-			Bytes: templateUUID,
-			Valid: true,
-		},
-		Title: dto.Title,
+		TemplateID:     pgtype.UUID{Bytes: templateUUID, Valid: true},
+		Title:          dto.Title,
 	})
 	if err != nil {
-		return FormTemplateResponse{}, err
+		return CloneFormResponse{}, err
+	}
+
+	// Clone sections with fresh IDs and remap
+	templateSections, err := qtx.GetTemplateSectionsByTemplateID(ctx, pgtype.UUID{Bytes: templateUUID, Valid: true})
+	if err != nil {
+		return CloneFormResponse{}, err
+	}
+
+	sectionMap := make(map[uuid.UUID]uuid.UUID, len(templateSections))
+	for _, ts := range templateSections {
+		ns, err := qtx.CreateFormSection(ctx, repo.CreateFormSectionParams{
+			FormID:      pgtype.UUID{Bytes: form.ID, Valid: true},
+			TemplateID:  pgtype.UUID{Valid: false},
+			Title:       ts.Title,
+			Description: ts.Description,
+			SortOrder:   ts.SortOrder,
+		})
+		if err != nil {
+			return CloneFormResponse{}, err
+		}
+		sectionMap[ts.ID] = ns.ID
+	}
+
+	// Clone fields with remapped section IDs
+	templateFields, err := qtx.GetTemplateFieldsByTemplateID(ctx, pgtype.UUID{Bytes: templateUUID, Valid: true})
+	if err != nil {
+		return CloneFormResponse{}, err
+	}
+
+	for _, tf := range templateFields {
+		newSectionID, ok := sectionMap[tf.SectionID]
+		if !ok {
+			// Section missing — skip orphan field (should not happen if data is consistent)
+			continue
+		}
+		_, err := qtx.CreateFormField(ctx, repo.CreateFormFieldParams{
+			FormID:      pgtype.UUID{Bytes: form.ID, Valid: true},
+			TemplateID:  pgtype.UUID{Valid: false},
+			SectionID:   newSectionID,
+			FieldType:   tf.FieldType,
+			Label:       tf.Label,
+			Key:         tf.Key,
+			Description: tf.Description,
+			Placeholder: tf.Placeholder,
+			IsRequired:  tf.IsRequired,
+			SortOrder:   tf.SortOrder,
+			Validation:  tf.Validation,
+			Options:     tf.Options,
+		})
+		if err != nil {
+			return CloneFormResponse{}, err
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return CloneFormResponse{}, err
+	}
+
+	return mapFormToCloneResponse(form), nil
+}
+
+func (s *formTemplateService) cloneWithoutTx(ctx context.Context, templateUUID uuid.UUID, orgID uuid.UUID, dto CloneTemplateDto) (CloneFormResponse, error) {
+	form, err := s.repo.CloneTemplateToForm(ctx, repo.CloneTemplateToFormParams{
+		OrganizationID: orgID,
+		TemplateID:     pgtype.UUID{Bytes: templateUUID, Valid: true},
+		Title:          dto.Title,
+	})
+	if err != nil {
+		return CloneFormResponse{}, err
+	}
+
+	templateSections, err := s.repo.GetTemplateSectionsByTemplateID(ctx, pgtype.UUID{Bytes: templateUUID, Valid: true})
+	if err != nil {
+		return CloneFormResponse{}, err
+	}
+
+	sectionMap := make(map[uuid.UUID]uuid.UUID, len(templateSections))
+	for _, ts := range templateSections {
+		ns, err := s.repo.CreateFormSection(ctx, repo.CreateFormSectionParams{
+			FormID:      pgtype.UUID{Bytes: form.ID, Valid: true},
+			TemplateID:  pgtype.UUID{Valid: false},
+			Title:       ts.Title,
+			Description: ts.Description,
+			SortOrder:   ts.SortOrder,
+		})
+		if err != nil {
+			return CloneFormResponse{}, err
+		}
+		sectionMap[ts.ID] = ns.ID
+	}
+
+	templateFields, err := s.repo.GetTemplateFieldsByTemplateID(ctx, pgtype.UUID{Bytes: templateUUID, Valid: true})
+	if err != nil {
+		return CloneFormResponse{}, err
+	}
+
+	for _, tf := range templateFields {
+		newSectionID, ok := sectionMap[tf.SectionID]
+		if !ok {
+			continue
+		}
+		_, err := s.repo.CreateFormField(ctx, repo.CreateFormFieldParams{
+			FormID:      pgtype.UUID{Bytes: form.ID, Valid: true},
+			TemplateID:  pgtype.UUID{Valid: false},
+			SectionID:   newSectionID,
+			FieldType:   tf.FieldType,
+			Label:       tf.Label,
+			Key:         tf.Key,
+			Description: tf.Description,
+			Placeholder: tf.Placeholder,
+			IsRequired:  tf.IsRequired,
+			SortOrder:   tf.SortOrder,
+			Validation:  tf.Validation,
+			Options:     tf.Options,
+		})
+		if err != nil {
+			return CloneFormResponse{}, err
+		}
+	}
+
+	return mapFormToCloneResponse(form), nil
+}
+
+func (s *formTemplateService) GetTemplateDetail(ctx context.Context, id string) (TemplateDetailResponse, error) {
+	templateUUID, err := uuid.Parse(id)
+	if err != nil {
+		return TemplateDetailResponse{}, err
 	}
 	template, err := s.repo.GetFormTemplateByID(ctx, templateUUID)
 	if err != nil {
-		return FormTemplateResponse{}, err
+		return TemplateDetailResponse{}, ErrTemplateNotFound
 	}
-	return mapTemplateToResponse(template), nil
+	sections, err := s.repo.GetTemplateSectionsByTemplateID(ctx, pgtype.UUID{Bytes: templateUUID, Valid: true})
+	if err != nil {
+		return TemplateDetailResponse{}, err
+	}
+	fields, err := s.repo.GetTemplateFieldsByTemplateID(ctx, pgtype.UUID{Bytes: templateUUID, Valid: true})
+	if err != nil {
+		return TemplateDetailResponse{}, err
+	}
+	// Group fields by section
+	fieldsBySection := make(map[uuid.UUID][]TemplateFieldDetail, len(sections))
+	for _, f := range fields {
+		fieldsBySection[f.SectionID] = append(fieldsBySection[f.SectionID], mapTemplateFieldToDetail(f))
+	}
+	detailSections := make([]TemplateSectionWithFields, 0, len(sections))
+	for _, sec := range sections {
+		detailSections = append(detailSections, TemplateSectionWithFields{
+			Section: mapSectionToDetail(sec),
+			Fields:  fieldsBySection[sec.ID],
+		})
+	}
+	// Ensure empty slice not null
+	for i := range detailSections {
+		if detailSections[i].Fields == nil {
+			detailSections[i].Fields = []TemplateFieldDetail{}
+		}
+	}
+	return TemplateDetailResponse{
+		Template: mapTemplateToResponse(template),
+		Sections: detailSections,
+	}, nil
+}
+
+func mapSectionToDetail(s repo.FormSection) SectionDetailResponse {
+	templateID := ""
+	if s.TemplateID.Valid {
+		templateID = uuid.UUID(s.TemplateID.Bytes).String()
+	}
+	return SectionDetailResponse{
+		ID:          s.ID.String(),
+		TemplateID:  templateID,
+		Title:       s.Title,
+		Description: s.Description.String,
+		SortOrder:   int(s.SortOrder),
+		CreatedAt:   s.CreatedAt.Time.Format(time.RFC3339),
+		UpdatedAt:   s.UpdatedAt.Time.Format(time.RFC3339),
+	}
+}
+
+func mapTemplateFieldToDetail(f repo.FormField) TemplateFieldDetail {
+	var validation interface{}
+	if f.Validation != nil {
+		_ = json.Unmarshal(f.Validation, &validation)
+	}
+	var options interface{}
+	if f.Options != nil {
+		_ = json.Unmarshal(f.Options, &options)
+	}
+	return TemplateFieldDetail{
+		ID:          f.ID.String(),
+		TemplateID:  uuid.UUID(f.TemplateID.Bytes).String(),
+		SectionID:   f.SectionID.String(),
+		FieldType:   f.FieldType,
+		Label:       f.Label,
+		Key:         f.Key,
+		Description: f.Description.String,
+		Placeholder: f.Placeholder.String,
+		IsRequired:  f.IsRequired,
+		SortOrder:   int(f.SortOrder),
+		Validation:  validation,
+		Options:     options,
+		CreatedAt:   f.CreatedAt.Time.Format(time.RFC3339),
+		UpdatedAt:   f.UpdatedAt.Time.Format(time.RFC3339),
+	}
 }
 
 func mapTemplateToResponse(t repo.FormTemplate) FormTemplateResponse {
@@ -147,5 +370,22 @@ func mapTemplateToResponse(t repo.FormTemplate) FormTemplateResponse {
 		IsActive:    t.IsActive,
 		CreatedAt:   t.CreatedAt.Time.Format(time.RFC3339),
 		UpdatedAt:   t.UpdatedAt.Time.Format(time.RFC3339),
+	}
+}
+
+func mapFormToCloneResponse(f repo.Form) CloneFormResponse {
+	templateID := ""
+	if f.TemplateID.Valid {
+		templateID = uuid.UUID(f.TemplateID.Bytes).String()
+	}
+	return CloneFormResponse{
+		ID:             f.ID.String(),
+		OrganizationID: f.OrganizationID.String(),
+		TemplateID:     templateID,
+		Title:          f.Title,
+		Description:    f.Description.String,
+		Status:         f.Status,
+		CreatedAt:      f.CreatedAt.Time.Format(time.RFC3339),
+		UpdatedAt:      f.UpdatedAt.Time.Format(time.RFC3339),
 	}
 }
