@@ -150,13 +150,21 @@ func (app *application) mount() http.Handler {
 		r.Delete("/fields/{fieldId}", templateFieldHandler.DeleteField)
 	})
 
-	// Form routes
+	// Form routes - unified services (scratch creation via forms, clone via templates)
 	formService := forms.NewService(repoQueries)
 	formHandler := forms.NewHandler(formService, app.validator)
 
+	// Unified field service - single implementation for both form and template fields (same table)
+	formFieldService := form_fields.NewService(repoQueries)
+	formFieldHandler := form_fields.NewHandler(formFieldService, app.validator)
+
+	// Unified submission service - single instance reused for form and review routes
+	formSubmissionService := form_submissions.NewService(repoQueries)
+	formSubmissionHandler := form_submissions.NewHandler(formSubmissionService, app.validator)
+
 	r.Route("/api/forms", func(r chi.Router) {
 		r.Use(authMiddleware)
-		r.Post("/", formHandler.CreateForm)
+		r.Post("/", formHandler.CreateForm) // scratch only; for template use POST /templates/{id}/clone
 		r.Get("/", formHandler.GetFormsByOrg)
 		r.Get("/{formId}", formHandler.GetFormByID)
 		r.Get("/{formId}/detail", formHandler.GetFormDetail)
@@ -168,18 +176,12 @@ func (app *application) mount() http.Handler {
 		r.Get("/{formId}/sections", sectionHandler.GetFormSections)
 
 		// Form field routes
-		formFieldService := form_fields.NewService(repoQueries)
-		formFieldHandler := form_fields.NewHandler(formFieldService, app.validator)
-
 		r.Post("/{formId}/fields", formFieldHandler.CreateField)
 		r.Get("/{formId}/fields", formFieldHandler.GetFieldsByFormID)
 		r.Put("/{formId}/fields/{fieldId}", formFieldHandler.UpdateField)
 		r.Delete("/{formId}/fields/{fieldId}", formFieldHandler.DeleteField)
 
 		// Form submission routes
-		formSubmissionService := form_submissions.NewService(repoQueries)
-		formSubmissionHandler := form_submissions.NewHandler(formSubmissionService, app.validator)
-
 		r.Post("/{formId}/submissions", formSubmissionHandler.CreateSubmission)
 		r.Get("/{formId}/submissions", formSubmissionHandler.GetSubmissionsByFormID)
 	})
@@ -191,14 +193,11 @@ func (app *application) mount() http.Handler {
 		r.Delete("/{sectionId}", sectionHandler.DeleteSection)
 	})
 
-	// Submission review routes (outside /api/forms for cleaner URLs)
-	formSubmissionServiceForReview := form_submissions.NewService(repoQueries)
-	formSubmissionHandlerForReview := form_submissions.NewHandler(formSubmissionServiceForReview, app.validator)
-
+	// Submission review routes (outside /api/forms for cleaner URLs) - reused service
 	r.Route("/api/submissions", func(r chi.Router) {
 		r.Use(authMiddleware)
-		r.Get("/{id}", formSubmissionHandlerForReview.GetSubmissionByID)
-		r.Put("/{id}/review", formSubmissionHandlerForReview.ReviewSubmission)
+		r.Get("/{id}", formSubmissionHandler.GetSubmissionByID)
+		r.Put("/{id}/review", formSubmissionHandler.ReviewSubmission)
 	})
 
 	return r

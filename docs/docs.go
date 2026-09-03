@@ -268,7 +268,7 @@ const docTemplate = `{
                 ]
             },
             "post": {
-                "description": "Creates a new form for the authenticated user's organization",
+                "description": "Creates a new empty form for the authenticated user's organization. Use POST /templates/{id}/clone to create a form from a template.",
                 "consumes": [
                     "application/json"
                 ],
@@ -278,10 +278,10 @@ const docTemplate = `{
                 "tags": [
                     "forms"
                 ],
-                "summary": "Create a form",
+                "summary": "Create a scratch form",
                 "parameters": [
                     {
-                        "description": "Form payload",
+                        "description": "Form payload (scratch build - no template_id)",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -3945,9 +3945,6 @@ const docTemplate = `{
                 "description": {
                     "type": "string",
                     "maxLength": 1000
-                },
-                "template_id": {
-                    "type": "string"
                 },
                 "title": {
                     "type": "string",

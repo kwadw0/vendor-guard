@@ -43,18 +43,11 @@ func (s *formService) CreateForm(ctx context.Context, dto CreateFormDto, userID 
 		return FormResponse{}, ErrAccessDenied
 	}
 
-	var templateID pgtype.UUID
-	if dto.TemplateID != "" {
-		tID, err := uuid.Parse(dto.TemplateID)
-		if err != nil {
-			return FormResponse{}, err
-		}
-		templateID = pgtype.UUID{Bytes: tID, Valid: true}
-	}
-
+	// Scratch creation only - template cloning is via POST /templates/{id}/clone
+	// which correctly deep-copies sections/fields with lineage.
 	form, err := s.repo.CreateForm(ctx, repo.CreateFormParams{
 		OrganizationID: org.ID,
-		TemplateID:     templateID,
+		TemplateID:     pgtype.UUID{Valid: false},
 		Title:          dto.Title,
 		Description: pgtype.Text{
 			String: dto.Description,

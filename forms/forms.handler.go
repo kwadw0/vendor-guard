@@ -34,12 +34,12 @@ func NewHandler(service FormService, v *validator.Validate) FormHandler {
 
 // CreateForm godoc
 //
-//	@Summary		Create a form
-//	@Description	Creates a new form for the authenticated user's organization
+//	@Summary		Create a scratch form
+//	@Description	Creates a new empty form for the authenticated user's organization. Use POST /templates/{id}/clone to create a form from a template.
 //	@Tags			forms
 //	@Accept			json
 //	@Produce		json
-//	@Param			body	body		CreateFormDto					true	"Form payload"
+//	@Param			body	body		CreateFormDto					true	"Form payload (scratch build - no template_id)"
 //	@Success		201		{object}	utils.SuccessResponse{data=FormResponse}	"Form created successfully"
 //	@Failure		400		{object}	utils.ErrorResponse				"Bad request or validation error"
 //	@Failure		403		{object}	utils.ErrorResponse				"Access denied"

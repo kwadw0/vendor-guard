@@ -134,11 +134,10 @@ func (s *formTemplateService) CloneTemplateToForm(ctx context.Context, templateI
 		return CloneFormResponse{}, ErrTemplateNotFound
 	}
 
-	// Use transaction if pool is available, otherwise fallback to non-transactional
+	// Transactional deep-copy: form + sections + fields atomically
 	if s.pool == nil {
-		return s.cloneWithoutTx(ctx, templateUUID, org.ID, dto)
+		return CloneFormResponse{}, errors.New("clone requires database pool - use NewServiceWithPool")
 	}
-
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return CloneFormResponse{}, err
@@ -210,68 +209,6 @@ func (s *formTemplateService) CloneTemplateToForm(ctx context.Context, templateI
 
 	if err := tx.Commit(ctx); err != nil {
 		return CloneFormResponse{}, err
-	}
-
-	return mapFormToCloneResponse(form), nil
-}
-
-func (s *formTemplateService) cloneWithoutTx(ctx context.Context, templateUUID uuid.UUID, orgID uuid.UUID, dto CloneTemplateDto) (CloneFormResponse, error) {
-	form, err := s.repo.CloneTemplateToForm(ctx, repo.CloneTemplateToFormParams{
-		OrganizationID: orgID,
-		TemplateID:     pgtype.UUID{Bytes: templateUUID, Valid: true},
-		Title:          dto.Title,
-	})
-	if err != nil {
-		return CloneFormResponse{}, err
-	}
-
-	templateSections, err := s.repo.GetTemplateSectionsByTemplateID(ctx, pgtype.UUID{Bytes: templateUUID, Valid: true})
-	if err != nil {
-		return CloneFormResponse{}, err
-	}
-
-	sectionMap := make(map[uuid.UUID]uuid.UUID, len(templateSections))
-	for _, ts := range templateSections {
-		ns, err := s.repo.CreateFormSection(ctx, repo.CreateFormSectionParams{
-			FormID:      pgtype.UUID{Bytes: form.ID, Valid: true},
-			TemplateID:  pgtype.UUID{Valid: false},
-			Title:       ts.Title,
-			Description: ts.Description,
-			SortOrder:   ts.SortOrder,
-		})
-		if err != nil {
-			return CloneFormResponse{}, err
-		}
-		sectionMap[ts.ID] = ns.ID
-	}
-
-	templateFields, err := s.repo.GetTemplateFieldsByTemplateID(ctx, pgtype.UUID{Bytes: templateUUID, Valid: true})
-	if err != nil {
-		return CloneFormResponse{}, err
-	}
-
-	for _, tf := range templateFields {
-		newSectionID, ok := sectionMap[tf.SectionID]
-		if !ok {
-			continue
-		}
-		_, err := s.repo.CreateFormField(ctx, repo.CreateFormFieldParams{
-			FormID:      pgtype.UUID{Bytes: form.ID, Valid: true},
-			TemplateID:  pgtype.UUID{Valid: false},
-			SectionID:   newSectionID,
-			FieldType:   tf.FieldType,
-			Label:       tf.Label,
-			Key:         tf.Key,
-			Description: tf.Description,
-			Placeholder: tf.Placeholder,
-			IsRequired:  tf.IsRequired,
-			SortOrder:   tf.SortOrder,
-			Validation:  tf.Validation,
-			Options:     tf.Options,
-		})
-		if err != nil {
-			return CloneFormResponse{}, err
-		}
 	}
 
 	return mapFormToCloneResponse(form), nil

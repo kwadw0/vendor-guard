@@ -1,7 +1,6 @@
 package forms
 
 type CreateFormDto struct {
-	TemplateID  string `json:"template_id" validate:"omitempty,uuid"`
 	Title       string `json:"title" validate:"required,min=2,max=255"`
 	Description string `json:"description" validate:"omitempty,max=1000"`
 }
