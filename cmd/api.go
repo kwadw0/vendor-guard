@@ -79,6 +79,7 @@ func (app *application) mount() http.Handler {
 	r.Route("/api/users", func(r chi.Router) {
 		r.Post("/", userHandler.CreateUser)
 		r.Get("/", userHandler.GetAllUsers)
+		r.With(authMiddleware).Get("/me", userHandler.GetMe)
 		r.Get("/{id}", userHandler.GetUser)
 		r.Put("/{id}", userHandler.UpdateUser)
 		r.Delete("/{id}", userHandler.DeleteUser)
@@ -166,24 +167,24 @@ func (app *application) mount() http.Handler {
 		r.Use(authMiddleware)
 		r.Post("/", formHandler.CreateForm) // scratch only; for template use POST /templates/{id}/clone
 		r.Get("/", formHandler.GetFormsByOrg)
-		r.Get("/{formId}", formHandler.GetFormByID)
-		r.Get("/{formId}/detail", formHandler.GetFormDetail)
-		r.Put("/{formId}", formHandler.UpdateForm)
-		r.Delete("/{formId}", formHandler.DeleteForm)
+		r.Get("/{id}", formHandler.GetFormByID)
+		r.Get("/{id}/detail", formHandler.GetFormDetail)
+		r.Put("/{id}", formHandler.UpdateForm)
+		r.Delete("/{id}", formHandler.DeleteForm)
 
 		// Form section routes
-		r.Post("/{formId}/sections", sectionHandler.CreateFormSection)
-		r.Get("/{formId}/sections", sectionHandler.GetFormSections)
+		r.Post("/{id}/sections", sectionHandler.CreateFormSection)
+		r.Get("/{id}/sections", sectionHandler.GetFormSections)
 
 		// Form field routes
-		r.Post("/{formId}/fields", formFieldHandler.CreateField)
-		r.Get("/{formId}/fields", formFieldHandler.GetFieldsByFormID)
-		r.Put("/{formId}/fields/{fieldId}", formFieldHandler.UpdateField)
-		r.Delete("/{formId}/fields/{fieldId}", formFieldHandler.DeleteField)
+		r.Post("/{id}/fields", formFieldHandler.CreateField)
+		r.Get("/{id}/fields", formFieldHandler.GetFieldsByFormID)
+		r.Put("/{id}/fields/{fieldId}", formFieldHandler.UpdateField)
+		r.Delete("/{id}/fields/{fieldId}", formFieldHandler.DeleteField)
 
 		// Form submission routes
-		r.Post("/{formId}/submissions", formSubmissionHandler.CreateSubmission)
-		r.Get("/{formId}/submissions", formSubmissionHandler.GetSubmissionsByFormID)
+		r.Post("/{id}/submissions", formSubmissionHandler.CreateSubmission)
+		r.Get("/{id}/submissions", formSubmissionHandler.GetSubmissionsByFormID)
 	})
 
 	// Generic section routes (update/delete both form and template sections)

@@ -8,12 +8,14 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	appErrors "preuvio/internal/common"
+	"preuvio/middleware"
 	"preuvio/utils"
 )
 
 type Handler interface {
 	CreateUser(w http.ResponseWriter, r *http.Request)
 	GetUser(w http.ResponseWriter, r *http.Request)
+	GetMe(w http.ResponseWriter, r *http.Request)
 	GetAllUsers(w http.ResponseWriter, r *http.Request)
 	UpdateUser(w http.ResponseWriter, r *http.Request)
 	DeleteUser(w http.ResponseWriter, r *http.Request)
@@ -91,6 +93,35 @@ func (h *handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSON(w, http.StatusOK, "User retrieved successfully", res)
+}
+
+// GetMe godoc
+//
+//	@Summary		Get current user
+//	@Description	Returns the authenticated user from Bearer token
+//	@Tags			users
+//	@Produce		json
+//	@Success		200	{object}	utils.SuccessResponse{data=users.UserResponseDto}	"Current user retrieved successfully"
+//	@Failure		401	{object}	utils.ErrorResponse	"Unauthorized"
+//	@Failure		404	{object}	utils.ErrorResponse	"User not found"
+//	@Security		BearerAuth
+//	@Router			/api/users/me [get]
+func (h *handler) GetMe(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
+	if userID == "" {
+		utils.ErrorJSON(w, http.StatusUnauthorized, errors.New("unauthorized"), "UNAUTHORIZED")
+		return
+	}
+	res, err := h.service.GetUser(r.Context(), userID)
+	if err != nil {
+		if errors.Is(err, appErrors.ErrUserNotFound) {
+			utils.ErrorJSON(w, http.StatusNotFound, err, "USER_NOT_FOUND")
+			return
+		}
+		utils.ErrorJSON(w, http.StatusInternalServerError, err, "INTERNAL_ERROR")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, "Current user retrieved successfully", res)
 }
 
 // GetAllUsers godoc

@@ -2827,4 +2827,32 @@ paths:
       summary: Update a user
       tags:
       - users
+  /api/users/me:
+    get:
+      description: Returns the authenticated user from Bearer token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Current user retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/users.UserResponseDto'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user
+      tags:
+      - users
 swagger: "2.0"
