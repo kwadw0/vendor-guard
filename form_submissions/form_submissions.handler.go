@@ -48,7 +48,7 @@ func NewHandler(service FormSubmissionService, v *validator.Validate) FormSubmis
 //	@Router			/api/forms/{formId}/submissions [post]
 func (h *formSubmissionHandler) CreateSubmission(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
-	formID := chi.URLParam(r, "formId")
+	formID := chi.URLParam(r, "id")
 	var dto CreateFormSubmissionDto
 	if err := utils.ReadJSON(w, r, &dto); err != nil {
 		utils.ErrorJSON(w, http.StatusBadRequest, err, "BAD_REQUEST")
@@ -115,7 +115,7 @@ func (h *formSubmissionHandler) GetSubmissionByID(w http.ResponseWriter, r *http
 //	@Router			/api/forms/{formId}/submissions [get]
 func (h *formSubmissionHandler) GetSubmissionsByFormID(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
-	formID := chi.URLParam(r, "formId")
+	formID := chi.URLParam(r, "id")
 	submissions, err := h.service.GetSubmissionsByFormID(r.Context(), formID, userID)
 	if err != nil {
 		if errors.Is(err, ErrAccessDenied) {
