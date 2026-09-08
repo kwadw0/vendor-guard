@@ -126,12 +126,14 @@ func (h *OrganizationHandler) GetOrganizationById(w http.ResponseWriter, r *http
 
 // GetAllOrganizations godoc
 //
-//	@Summary		List all organizations
+//	@Summary		List all organizations (paginated)
 //	@Description	Retrieve a list of all organizations
 //	@Tags			organizations
 //	@Produce		json
-//	@Success		200	{object}	utils.SuccessResponse{data=[]organizations.OrganizationResponseDto}
-//	@Failure		500	{object}	utils.ErrorResponse
+//	@Param			page	query		int	false	"Page (1-based, default 1)"	Minimum(1)
+//	@Param			limit	query		int	false	"Limit (default 20, max 50)"	Minimum(1)	Maximum(50)
+//	@Success		200		{object}	utils.SuccessResponse{data=[]organizations.OrganizationResponseDto,meta=utils.PaginationMeta}
+//	@Failure		500		{object}	utils.ErrorResponse
 //	@Router			/api/organizations [get]
 func (h *OrganizationHandler) GetAllOrganizations(w http.ResponseWriter, r *http.Request) {
 	orgs, err := h.service.GetAllOrganizations(r.Context())
@@ -139,7 +141,9 @@ func (h *OrganizationHandler) GetAllOrganizations(w http.ResponseWriter, r *http
 		utils.ErrorJSON(w, http.StatusInternalServerError, err, "INTERNAL_ERROR")
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, "Organizations retrieved successfully", orgs)
+	page, limit, _ := utils.ParsePagination(r.URL.Query(), utils.DefaultLimit, utils.MaxLimit)
+	paged, meta := utils.PaginateSlice(orgs, page, limit)
+	utils.WriteJSONWithMeta(w, http.StatusOK, "Organizations retrieved successfully", paged, meta)
 }
 
 // UpdateOrganization godoc

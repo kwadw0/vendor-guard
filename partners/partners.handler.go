@@ -97,13 +97,15 @@ func (h *partnerHandler) GetPartnerByID(w http.ResponseWriter, r *http.Request) 
 
 // GetAllPartners godoc
 //
-//	@Summary		List all partners
+//	@Summary		List all partners (paginated)
 //	@Description	Retrieves all partners scoped to the authenticated user
 //	@Tags			partners
 //	@Produce		json
-//	@Success		200	{object}	utils.SuccessResponse{data=[]PartnerResponse}	"Partners retrieved successfully"
-//	@Failure		403	{object}	utils.ErrorResponse								"Access denied"
-//	@Failure		500	{object}	utils.ErrorResponse								"Internal server error"
+//	@Param			page	query		int	false	"Page (1-based, default 1)"	Minimum(1)
+//	@Param			limit	query		int	false	"Limit (default 20, max 50)"	Minimum(1)	Maximum(50)
+//	@Success		200		{object}	utils.SuccessResponse{data=[]PartnerResponse,meta=utils.PaginationMeta}	"Partners retrieved successfully"
+//	@Failure		403		{object}	utils.ErrorResponse								"Access denied"
+//	@Failure		500		{object}	utils.ErrorResponse								"Internal server error"
 //	@Security		BearerAuth
 //	@Router			/api/partners [get]
 func (h *partnerHandler) GetAllPartners(w http.ResponseWriter, r *http.Request) {
@@ -117,7 +119,9 @@ func (h *partnerHandler) GetAllPartners(w http.ResponseWriter, r *http.Request) 
 		utils.ErrorJSON(w, http.StatusInternalServerError, err, "INTERNAL_ERROR")
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, "Partners retrieved successfully", partners)
+	page, limit, _ := utils.ParsePagination(r.URL.Query(), utils.DefaultLimit, utils.MaxLimit)
+	paged, meta := utils.PaginateSlice(partners, page, limit)
+	utils.WriteJSONWithMeta(w, http.StatusOK, "Partners retrieved successfully", paged, meta)
 }
 
 // UpdatePartner godoc

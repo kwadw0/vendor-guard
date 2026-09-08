@@ -174,7 +174,7 @@ func (h *formSubmissionHandler) GetSubmissionsByPartnerID(w http.ResponseWriter,
 //	@Param			order		query		string	false	"Sort order"	Enums(asc,desc)	Default(desc)
 //	@Param			date_from	query		string	false	"Submitted after (RFC3339)"	Format(date-time)
 //	@Param			date_to		query		string	false	"Submitted before (RFC3339)"	Format(date-time)
-//	@Success		200			{object}	utils.SuccessResponse{data=[]EnrichedSubmissionResponse}	"Submissions retrieved successfully"
+//	@Success		200			{object}	utils.SuccessResponse{data=[]EnrichedSubmissionResponse,meta=utils.PaginationMeta}	"Submissions retrieved successfully"
 //	@Failure		401			{object}	utils.ErrorResponse	"Unauthorized"
 //	@Security		BearerAuth
 //	@Router			/api/submissions [get]
@@ -235,15 +235,7 @@ func (h *formSubmissionHandler) ListSubmissions(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	meta := utils.PaginationMeta{
-		Page:       result.Page,
-		Limit:      result.PageSize,
-		Total:      result.Total,
-		TotalPages: (result.Total + result.PageSize - 1) / result.PageSize,
-	}
-	if result.Total == 0 {
-		meta.TotalPages = 0
-	}
+	meta := utils.NewPaginationMeta(result.Page, result.PageSize, result.Total)
 	utils.WriteJSONWithMeta(w, http.StatusOK, "Submissions retrieved successfully", result.Submissions, meta)
 }
 

@@ -91,12 +91,14 @@ func (h *formTemplateHandler) GetTemplateByID(w http.ResponseWriter, r *http.Req
 
 // GetAllTemplates godoc
 //
-//	@Summary		List all form templates
+//	@Summary		List all form templates (paginated)
 //	@Description	Retrieves all active form templates
 //	@Tags			form-templates
 //	@Produce		json
-//	@Success		200	{object}	utils.SuccessResponse{data=[]FormTemplateResponse}	"Templates retrieved successfully"
-//	@Failure		500	{object}	utils.ErrorResponse									"Internal server error"
+//	@Param			page	query		int	false	"Page (1-based, default 1)"	Minimum(1)
+//	@Param			limit	query		int	false	"Limit (default 20, max 50)"	Minimum(1)	Maximum(50)
+//	@Success		200		{object}	utils.SuccessResponse{data=[]FormTemplateResponse,meta=utils.PaginationMeta}	"Templates retrieved successfully"
+//	@Failure		500		{object}	utils.ErrorResponse									"Internal server error"
 //	@Security		BearerAuth
 //	@Router			/api/templates [get]
 func (h *formTemplateHandler) GetAllTemplates(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +107,9 @@ func (h *formTemplateHandler) GetAllTemplates(w http.ResponseWriter, r *http.Req
 		utils.ErrorJSON(w, http.StatusInternalServerError, err, "INTERNAL_ERROR")
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, "Templates retrieved successfully", templates)
+	page, limit, _ := utils.ParsePagination(r.URL.Query(), utils.DefaultLimit, utils.MaxLimit)
+	paged, meta := utils.PaginateSlice(templates, page, limit)
+	utils.WriteJSONWithMeta(w, http.StatusOK, "Templates retrieved successfully", paged, meta)
 }
 
 // UpdateTemplate godoc

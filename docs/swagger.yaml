@@ -908,6 +908,17 @@ definitions:
       success:
         type: boolean
     type: object
+  utils.PaginationMeta:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
   utils.SuccessResponse:
     properties:
       data: {}
@@ -1052,6 +1063,18 @@ paths:
   /api/forms:
     get:
       description: Retrieves all forms for the authenticated user's organization
+      parameters:
+      - description: Page (1-based, default 1)
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - description: Limit (default 20, max 50)
+        in: query
+        maximum: 50
+        minimum: 1
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -1065,6 +1088,8 @@ paths:
                   items:
                     $ref: '#/definitions/forms.FormResponse'
                   type: array
+                meta:
+                  $ref: '#/definitions/utils.PaginationMeta'
               type: object
         "403":
           description: Access denied
@@ -1076,7 +1101,7 @@ paths:
             $ref: '#/definitions/utils.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: List org forms
+      summary: List org forms (paginated)
       tags:
       - forms
     post:
@@ -1575,6 +1600,18 @@ paths:
   /api/organizations:
     get:
       description: Retrieve a list of all organizations
+      parameters:
+      - description: Page (1-based, default 1)
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - description: Limit (default 20, max 50)
+        in: query
+        maximum: 50
+        minimum: 1
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -1588,12 +1625,14 @@ paths:
                   items:
                     $ref: '#/definitions/organizations.OrganizationResponseDto'
                   type: array
+                meta:
+                  $ref: '#/definitions/utils.PaginationMeta'
               type: object
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
-      summary: List all organizations
+      summary: List all organizations (paginated)
       tags:
       - organizations
     post:
@@ -1771,6 +1810,18 @@ paths:
   /api/partners:
     get:
       description: Retrieves all partners scoped to the authenticated user
+      parameters:
+      - description: Page (1-based, default 1)
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - description: Limit (default 20, max 50)
+        in: query
+        maximum: 50
+        minimum: 1
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -1784,6 +1835,8 @@ paths:
                   items:
                     $ref: '#/definitions/partners.PartnerResponse'
                   type: array
+                meta:
+                  $ref: '#/definitions/utils.PaginationMeta'
               type: object
         "403":
           description: Access denied
@@ -1795,7 +1848,7 @@ paths:
             $ref: '#/definitions/utils.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: List all partners
+      summary: List all partners (paginated)
       tags:
       - partners
     post:
@@ -2245,6 +2298,8 @@ paths:
                   items:
                     $ref: '#/definitions/form_submissions.EnrichedSubmissionResponse'
                   type: array
+                meta:
+                  $ref: '#/definitions/utils.PaginationMeta'
               type: object
         "401":
           description: Unauthorized
@@ -2338,6 +2393,18 @@ paths:
   /api/templates:
     get:
       description: Retrieves all active form templates
+      parameters:
+      - description: Page (1-based, default 1)
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - description: Limit (default 20, max 50)
+        in: query
+        maximum: 50
+        minimum: 1
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -2351,6 +2418,8 @@ paths:
                   items:
                     $ref: '#/definitions/form_templates.FormTemplateResponse'
                   type: array
+                meta:
+                  $ref: '#/definitions/utils.PaginationMeta'
               type: object
         "500":
           description: Internal server error
@@ -2358,7 +2427,7 @@ paths:
             $ref: '#/definitions/utils.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: List all form templates
+      summary: List all form templates (paginated)
       tags:
       - form-templates
     post:
@@ -2781,6 +2850,18 @@ paths:
   /api/users:
     get:
       description: Retrieve a list of all users
+      parameters:
+      - description: Page (1-based, default 1)
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - description: Limit (default 20, max 50)
+        in: query
+        maximum: 50
+        minimum: 1
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -2794,12 +2875,14 @@ paths:
                   items:
                     $ref: '#/definitions/users.UserResponseDto'
                   type: array
+                meta:
+                  $ref: '#/definitions/utils.PaginationMeta'
               type: object
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
-      summary: Get all users
+      summary: Get all users (paginated)
       tags:
       - users
     post:

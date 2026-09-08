@@ -126,12 +126,14 @@ func (h *handler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 // GetAllUsers godoc
 //
-//	@Summary		Get all users
+//	@Summary		Get all users (paginated)
 //	@Description	Retrieve a list of all users
 //	@Tags			users
 //	@Produce		json
-//	@Success		200	{object}	utils.SuccessResponse{data=[]users.UserResponseDto}
-//	@Failure		500	{object}	utils.ErrorResponse
+//	@Param			page	query		int	false	"Page (1-based, default 1)"	Minimum(1)
+//	@Param			limit	query		int	false	"Limit (default 20, max 50)"	Minimum(1)	Maximum(50)
+//	@Success		200		{object}	utils.SuccessResponse{data=[]users.UserResponseDto,meta=utils.PaginationMeta}
+//	@Failure		500		{object}	utils.ErrorResponse
 //	@Router			/api/users [get]
 func (h *handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	res, err := h.service.GetAllUsers(r.Context())
@@ -140,7 +142,9 @@ func (h *handler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, "Users retrieved successfully", res)
+	page, limit, _ := utils.ParsePagination(r.URL.Query(), utils.DefaultLimit, utils.MaxLimit)
+	paged, meta := utils.PaginateSlice(res, page, limit)
+	utils.WriteJSONWithMeta(w, http.StatusOK, "Users retrieved successfully", paged, meta)
 }
 
 // UpdateUser godoc

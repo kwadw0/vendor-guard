@@ -102,13 +102,15 @@ func (h *formHandler) GetFormByID(w http.ResponseWriter, r *http.Request) {
 
 // GetFormsByOrg godoc
 //
-//	@Summary		List org forms
+//	@Summary		List org forms (paginated)
 //	@Description	Retrieves all forms for the authenticated user's organization
 //	@Tags			forms
 //	@Produce		json
-//	@Success		200	{object}	utils.SuccessResponse{data=[]FormResponse}	"Forms retrieved successfully"
-//	@Failure		403	{object}	utils.ErrorResponse							"Access denied"
-//	@Failure		500	{object}	utils.ErrorResponse							"Internal server error"
+//	@Param			page	query		int	false	"Page (1-based, default 1)"	Minimum(1)
+//	@Param			limit	query		int	false	"Limit (default 20, max 50)"	Minimum(1)	Maximum(50)
+//	@Success		200		{object}	utils.SuccessResponse{data=[]FormResponse,meta=utils.PaginationMeta}	"Forms retrieved successfully"
+//	@Failure		403		{object}	utils.ErrorResponse							"Access denied"
+//	@Failure		500		{object}	utils.ErrorResponse							"Internal server error"
 //	@Security		BearerAuth
 //	@Router			/api/forms [get]
 func (h *formHandler) GetFormsByOrg(w http.ResponseWriter, r *http.Request) {
@@ -122,7 +124,9 @@ func (h *formHandler) GetFormsByOrg(w http.ResponseWriter, r *http.Request) {
 		utils.ErrorJSON(w, http.StatusInternalServerError, err, "INTERNAL_ERROR")
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, "Forms retrieved successfully", forms)
+	page, limit, _ := utils.ParsePagination(r.URL.Query(), utils.DefaultLimit, utils.MaxLimit)
+	paged, meta := utils.PaginateSlice(forms, page, limit)
+	utils.WriteJSONWithMeta(w, http.StatusOK, "Forms retrieved successfully", paged, meta)
 }
 
 // UpdateForm godoc

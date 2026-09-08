@@ -225,7 +225,24 @@ const docTemplate = `{
                 "tags": [
                     "forms"
                 ],
-                "summary": "List org forms",
+                "summary": "List org forms (paginated)",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Page (1-based, default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Limit (default 20, max 50)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Forms retrieved successfully",
@@ -242,6 +259,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/forms.FormResponse"
                                             }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/definitions/utils.PaginationMeta"
                                         }
                                     }
                                 }
@@ -1091,7 +1111,24 @@ const docTemplate = `{
                 "tags": [
                     "organizations"
                 ],
-                "summary": "List all organizations",
+                "summary": "List all organizations (paginated)",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Page (1-based, default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Limit (default 20, max 50)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1108,6 +1145,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/organizations.OrganizationResponseDto"
                                             }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/definitions/utils.PaginationMeta"
                                         }
                                     }
                                 }
@@ -1415,7 +1455,24 @@ const docTemplate = `{
                 "tags": [
                     "partners"
                 ],
-                "summary": "List all partners",
+                "summary": "List all partners (paginated)",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Page (1-based, default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Limit (default 20, max 50)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Partners retrieved successfully",
@@ -1432,6 +1489,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/partners.PartnerResponse"
                                             }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/definitions/utils.PaginationMeta"
                                         }
                                     }
                                 }
@@ -2181,6 +2241,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/form_submissions.EnrichedSubmissionResponse"
                                             }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/definitions/utils.PaginationMeta"
                                         }
                                     }
                                 }
@@ -2344,7 +2407,24 @@ const docTemplate = `{
                 "tags": [
                     "form-templates"
                 ],
-                "summary": "List all form templates",
+                "summary": "List all form templates (paginated)",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Page (1-based, default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Limit (default 20, max 50)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Templates retrieved successfully",
@@ -2361,6 +2441,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/form_templates.FormTemplateResponse"
                                             }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/definitions/utils.PaginationMeta"
                                         }
                                     }
                                 }
@@ -3085,7 +3168,24 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Get all users",
+                "summary": "Get all users (paginated)",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Page (1-based, default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Limit (default 20, max 50)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -3102,6 +3202,9 @@ const docTemplate = `{
                                             "items": {
                                                 "$ref": "#/definitions/users.UserResponseDto"
                                             }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/definitions/utils.PaginationMeta"
                                         }
                                     }
                                 }
@@ -4706,6 +4809,23 @@ const docTemplate = `{
                 },
                 "success": {
                     "type": "boolean"
+                }
+            }
+        },
+        "utils.PaginationMeta": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
                 }
             }
         },
