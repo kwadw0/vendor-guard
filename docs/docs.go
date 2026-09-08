@@ -713,141 +713,6 @@ const docTemplate = `{
                 ]
             }
         },
-        "/api/forms/{formId}/submissions": {
-            "get": {
-                "description": "Retrieves all submissions for a form (org view)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "form-submissions"
-                ],
-                "summary": "List form submissions",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Form UUID",
-                        "name": "formId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Submissions retrieved successfully",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/utils.SuccessResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/form_submissions.FormSubmissionResponse"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "403": {
-                        "description": "Access denied",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Form not found",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ]
-            },
-            "post": {
-                "description": "Creates a new form submission from a partner",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "form-submissions"
-                ],
-                "summary": "Submit a form response",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Form UUID",
-                        "name": "formId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Submission payload",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/form_submissions.CreateFormSubmissionDto"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Submission created successfully",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/utils.SuccessResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/form_submissions.FormSubmissionResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request or validation error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "Access denied",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ]
-            }
-        },
         "/api/forms/{id}": {
             "get": {
                 "description": "Retrieves a form by ID with its sections and fields",
@@ -1070,6 +935,141 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Form not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/forms/{id}/submissions": {
+            "get": {
+                "description": "Retrieves all submissions for a form (org view) — legacy, use GET /api/submissions?form_id=",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "form-submissions"
+                ],
+                "summary": "List form submissions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Form UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Submissions retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/form_submissions.FormSubmissionResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Form not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "description": "Creates a new form submission from a partner",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "form-submissions"
+                ],
+                "summary": "Submit a form response",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Form UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Submission payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/form_submissions.CreateFormSubmissionDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Submission created successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/form_submissions.FormSubmissionResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/utils.ErrorResponse"
                         }
@@ -2069,16 +2069,148 @@ const docTemplate = `{
                 ]
             }
         },
-        "/api/submissions/{id}": {
+        "/api/submissions": {
             "get": {
-                "description": "Retrieves a form submission by ID",
+                "description": "Org member = all org submissions; partner = own only. Single enriched query with COUNT(*) OVER().",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "form-submissions"
                 ],
-                "summary": "Get a submission",
+                "summary": "List submissions (org-scoped, enriched, paginated)",
+                "parameters": [
+                    {
+                        "enum": [
+                            "pending",
+                            "approved",
+                            "rejected",
+                            "revision_required",
+                            "in_review"
+                        ],
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Filter by form ID",
+                        "name": "form_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Filter by partner ID",
+                        "name": "partner_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search in form title, partner name/email, responses",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Page (1-based, default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Limit (default 20, max 50)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "submitted_at",
+                            "created_at"
+                        ],
+                        "type": "string",
+                        "default": "submitted_at",
+                        "description": "Sort column",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "default": "desc",
+                        "description": "Sort order",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Submitted after (RFC3339)",
+                        "name": "date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Submitted before (RFC3339)",
+                        "name": "date_to",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Submissions retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/form_submissions.EnrichedSubmissionResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/submissions/{id}": {
+            "get": {
+                "description": "Retrieves a form submission by ID with form/partner enrichment",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "form-submissions"
+                ],
+                "summary": "Get a submission (enriched)",
                 "parameters": [
                     {
                         "type": "string",
@@ -2100,7 +2232,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/form_submissions.FormSubmissionResponse"
+                                            "$ref": "#/definitions/form_submissions.EnrichedSubmissionResponse"
                                         }
                                     }
                                 }
@@ -3337,7 +3469,6 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "field_type",
-                "key",
                 "label",
                 "section_id"
             ],
@@ -3368,8 +3499,7 @@ const docTemplate = `{
                 },
                 "key": {
                     "type": "string",
-                    "maxLength": 100,
-                    "minLength": 1
+                    "maxLength": 100
                 },
                 "label": {
                     "type": "string",
@@ -3437,7 +3567,6 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "field_type",
-                "key",
                 "label"
             ],
             "properties": {
@@ -3467,8 +3596,7 @@ const docTemplate = `{
                 },
                 "key": {
                     "type": "string",
-                    "maxLength": 100,
-                    "minLength": 1
+                    "maxLength": 100
                 },
                 "label": {
                     "type": "string",
@@ -3564,6 +3692,57 @@ const docTemplate = `{
                 "responses": {
                     "type": "object",
                     "additionalProperties": true
+                }
+            }
+        },
+        "form_submissions.EnrichedSubmissionResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "form_id": {
+                    "type": "string"
+                },
+                "form_status": {
+                    "type": "string"
+                },
+                "form_title": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "partner_email": {
+                    "type": "string"
+                },
+                "partner_id": {
+                    "type": "string"
+                },
+                "partner_name": {
+                    "type": "string"
+                },
+                "responses": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "reviewed_at": {
+                    "type": "string"
+                },
+                "reviewed_by": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "submitted_at": {
+                    "type": "string"
+                },
+                "submitted_by": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -3689,7 +3868,6 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "field_type",
-                "key",
                 "label",
                 "section_id"
             ],
@@ -3720,8 +3898,7 @@ const docTemplate = `{
                 },
                 "key": {
                     "type": "string",
-                    "maxLength": 100,
-                    "minLength": 1
+                    "maxLength": 100
                 },
                 "label": {
                     "type": "string",
@@ -3936,7 +4113,6 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "field_type",
-                "key",
                 "label"
             ],
             "properties": {
@@ -3966,8 +4142,7 @@ const docTemplate = `{
                 },
                 "key": {
                     "type": "string",
-                    "maxLength": 100,
-                    "minLength": 1
+                    "maxLength": 100
                 },
                 "label": {
                     "type": "string",
@@ -4541,6 +4716,7 @@ const docTemplate = `{
                 "message": {
                     "type": "string"
                 },
+                "meta": {},
                 "success": {
                     "type": "boolean"
                 }

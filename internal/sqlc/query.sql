@@ -408,13 +408,12 @@ ORDER BY sort_order ASC;
 UPDATE form_fields SET
   field_type = $2,
   label = $3,
-  key = $4,
-  description = $5,
-  placeholder = $6,
-  is_required = $7,
-  sort_order = $8,
-  validation = $9,
-  options = $10
+  description = $4,
+  placeholder = $5,
+  is_required = $6,
+  sort_order = $7,
+  validation = $8,
+  options = $9
 WHERE id = $1
 RETURNING *;
 
@@ -455,6 +454,42 @@ ORDER BY created_at DESC;
 SELECT * FROM form_submissions
 WHERE partner_id = $1
 ORDER BY created_at DESC;
+
+-- name: ListSubmissionsEnriched :many
+SELECT fs.*,
+       f.title  AS form_title,
+       f.status AS form_status,
+       p.name   AS partner_name,
+       p.email  AS partner_email,
+       COUNT(*) OVER() AS total_count
+FROM form_submissions fs
+JOIN forms f ON f.id = fs.form_id
+JOIN partners p ON p.id = fs.partner_id
+WHERE f.organization_id = sqlc.arg(organization_id)
+  AND (sqlc.narg(form_id)::uuid IS NULL OR fs.form_id = sqlc.narg(form_id)::uuid)
+  AND (sqlc.narg(status)::text IS NULL OR fs.status = sqlc.narg(status)::text)
+  AND (sqlc.narg(partner_id)::uuid IS NULL OR fs.partner_id = sqlc.narg(partner_id)::uuid)
+  AND (sqlc.narg(q)::text IS NULL OR f.title ILIKE '%' || sqlc.narg(q) || '%' OR p.name ILIKE '%' || sqlc.narg(q) || '%' OR p.email ILIKE '%' || sqlc.narg(q) || '%' OR fs.responses::text ILIKE '%' || sqlc.narg(q) || '%')
+  AND (sqlc.narg(date_from)::timestamptz IS NULL OR fs.submitted_at >= sqlc.narg(date_from)::timestamptz)
+  AND (sqlc.narg(date_to)::timestamptz IS NULL OR fs.submitted_at <= sqlc.narg(date_to)::timestamptz)
+ORDER BY
+  CASE WHEN sqlc.arg(sort_col)::text = 'submitted_at' AND sqlc.arg(sort_order)::text = 'asc' THEN fs.submitted_at END ASC,
+  CASE WHEN sqlc.arg(sort_col)::text = 'submitted_at' AND sqlc.arg(sort_order)::text = 'desc' THEN fs.submitted_at END DESC,
+  CASE WHEN sqlc.arg(sort_col)::text = 'created_at' AND sqlc.arg(sort_order)::text = 'asc' THEN fs.created_at END ASC,
+  CASE WHEN sqlc.arg(sort_col)::text = 'created_at' AND sqlc.arg(sort_order)::text = 'desc' THEN fs.created_at END DESC,
+  fs.submitted_at DESC
+LIMIT sqlc.arg(limit_val) OFFSET sqlc.arg(offset_val);
+
+-- name: GetSubmissionEnrichedByID :one
+SELECT fs.*,
+       f.title AS form_title,
+       f.status AS form_status,
+       p.name AS partner_name,
+       p.email AS partner_email
+FROM form_submissions fs
+JOIN forms f ON f.id = fs.form_id
+JOIN partners p ON p.id = fs.partner_id
+WHERE fs.id = sqlc.arg(id);
 
 -- name: UpdateFormSubmission :one
 UPDATE form_submissions SET

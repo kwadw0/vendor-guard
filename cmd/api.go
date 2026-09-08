@@ -194,9 +194,10 @@ func (app *application) mount() http.Handler {
 		r.Delete("/{sectionId}", sectionHandler.DeleteSection)
 	})
 
-	// Submission review routes (outside /api/forms for cleaner URLs) - reused service
+	// Submission routes - org-scoped enriched list + detail/review (single query, no N+1)
 	r.Route("/api/submissions", func(r chi.Router) {
 		r.Use(authMiddleware)
+		r.Get("/", formSubmissionHandler.ListSubmissions)
 		r.Get("/{id}", formSubmissionHandler.GetSubmissionByID)
 		r.Put("/{id}/review", formSubmissionHandler.ReviewSubmission)
 	})

@@ -68,7 +68,6 @@ definitions:
         type: boolean
       key:
         maxLength: 100
-        minLength: 1
         type: string
       label:
         maxLength: 255
@@ -85,7 +84,6 @@ definitions:
       validation: {}
     required:
     - field_type
-    - key
     - label
     - section_id
     type: object
@@ -142,7 +140,6 @@ definitions:
         type: boolean
       key:
         maxLength: 100
-        minLength: 1
         type: string
       label:
         maxLength: 255
@@ -157,7 +154,6 @@ definitions:
       validation: {}
     required:
     - field_type
-    - key
     - label
     type: object
   form_sections.CreateSectionDto:
@@ -214,6 +210,40 @@ definitions:
         type: object
     required:
     - responses
+    type: object
+  form_submissions.EnrichedSubmissionResponse:
+    properties:
+      created_at:
+        type: string
+      form_id:
+        type: string
+      form_status:
+        type: string
+      form_title:
+        type: string
+      id:
+        type: string
+      partner_email:
+        type: string
+      partner_id:
+        type: string
+      partner_name:
+        type: string
+      responses:
+        additionalProperties: true
+        type: object
+      reviewed_at:
+        type: string
+      reviewed_by:
+        type: string
+      status:
+        type: string
+      submitted_at:
+        type: string
+      submitted_by:
+        type: string
+      updated_at:
+        type: string
     type: object
   form_submissions.FormSubmissionResponse:
     properties:
@@ -319,7 +349,6 @@ definitions:
         type: boolean
       key:
         maxLength: 100
-        minLength: 1
         type: string
       label:
         maxLength: 255
@@ -336,7 +365,6 @@ definitions:
       validation: {}
     required:
     - field_type
-    - key
     - label
     - section_id
     type: object
@@ -491,7 +519,6 @@ definitions:
         type: boolean
       key:
         maxLength: 100
-        minLength: 1
         type: string
       label:
         maxLength: 255
@@ -506,7 +533,6 @@ definitions:
       validation: {}
     required:
     - field_type
-    - key
     - label
     type: object
   forms.CreateFormDto:
@@ -887,6 +913,7 @@ definitions:
       data: {}
       message:
         type: string
+      meta: {}
       success:
         type: boolean
     type: object
@@ -1321,87 +1348,6 @@ paths:
       summary: Create a form section
       tags:
       - form-sections
-  /api/forms/{formId}/submissions:
-    get:
-      description: Retrieves all submissions for a form (org view)
-      parameters:
-      - description: Form UUID
-        in: path
-        name: formId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Submissions retrieved successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/utils.SuccessResponse'
-            - properties:
-                data:
-                  items:
-                    $ref: '#/definitions/form_submissions.FormSubmissionResponse'
-                  type: array
-              type: object
-        "403":
-          description: Access denied
-          schema:
-            $ref: '#/definitions/utils.ErrorResponse'
-        "404":
-          description: Form not found
-          schema:
-            $ref: '#/definitions/utils.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: List form submissions
-      tags:
-      - form-submissions
-    post:
-      consumes:
-      - application/json
-      description: Creates a new form submission from a partner
-      parameters:
-      - description: Form UUID
-        in: path
-        name: formId
-        required: true
-        type: string
-      - description: Submission payload
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/form_submissions.CreateFormSubmissionDto'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Submission created successfully
-          schema:
-            allOf:
-            - $ref: '#/definitions/utils.SuccessResponse'
-            - properties:
-                data:
-                  $ref: '#/definitions/form_submissions.FormSubmissionResponse'
-              type: object
-        "400":
-          description: Bad request or validation error
-          schema:
-            $ref: '#/definitions/utils.ErrorResponse'
-        "403":
-          description: Access denied
-          schema:
-            $ref: '#/definitions/utils.ErrorResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Submit a form response
-      tags:
-      - form-submissions
   /api/forms/{id}:
     delete:
       description: Permanently deletes a form
@@ -1544,6 +1490,88 @@ paths:
       summary: Get full form with sections and fields
       tags:
       - forms
+  /api/forms/{id}/submissions:
+    get:
+      description: Retrieves all submissions for a form (org view) — legacy, use GET
+        /api/submissions?form_id=
+      parameters:
+      - description: Form UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Submissions retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/form_submissions.FormSubmissionResponse'
+                  type: array
+              type: object
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Form not found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List form submissions
+      tags:
+      - form-submissions
+    post:
+      consumes:
+      - application/json
+      description: Creates a new form submission from a partner
+      parameters:
+      - description: Form UUID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Submission payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/form_submissions.CreateFormSubmissionDto'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Submission created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/form_submissions.FormSubmissionResponse'
+              type: object
+        "400":
+          description: Bad request or validation error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Access denied
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit a form response
+      tags:
+      - form-submissions
   /api/organizations:
     get:
       description: Retrieve a list of all organizations
@@ -2138,9 +2166,98 @@ paths:
       summary: Update a section
       tags:
       - form-sections
+  /api/submissions:
+    get:
+      description: Org member = all org submissions; partner = own only. Single enriched
+        query with COUNT(*) OVER().
+      parameters:
+      - description: Filter by status
+        enum:
+        - pending
+        - approved
+        - rejected
+        - revision_required
+        - in_review
+        in: query
+        name: status
+        type: string
+      - description: Filter by form ID
+        format: uuid
+        in: query
+        name: form_id
+        type: string
+      - description: Filter by partner ID
+        format: uuid
+        in: query
+        name: partner_id
+        type: string
+      - description: Search in form title, partner name/email, responses
+        in: query
+        name: q
+        type: string
+      - description: Page (1-based, default 1)
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - description: Limit (default 20, max 50)
+        in: query
+        maximum: 50
+        minimum: 1
+        name: limit
+        type: integer
+      - default: submitted_at
+        description: Sort column
+        enum:
+        - submitted_at
+        - created_at
+        in: query
+        name: sort
+        type: string
+      - default: desc
+        description: Sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
+      - description: Submitted after (RFC3339)
+        format: date-time
+        in: query
+        name: date_from
+        type: string
+      - description: Submitted before (RFC3339)
+        format: date-time
+        in: query
+        name: date_to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Submissions retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/form_submissions.EnrichedSubmissionResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List submissions (org-scoped, enriched, paginated)
+      tags:
+      - form-submissions
   /api/submissions/{id}:
     get:
-      description: Retrieves a form submission by ID
+      description: Retrieves a form submission by ID with form/partner enrichment
       parameters:
       - description: Submission UUID
         in: path
@@ -2157,7 +2274,7 @@ paths:
             - $ref: '#/definitions/utils.SuccessResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/form_submissions.FormSubmissionResponse'
+                  $ref: '#/definitions/form_submissions.EnrichedSubmissionResponse'
               type: object
         "403":
           description: Access denied
@@ -2169,7 +2286,7 @@ paths:
             $ref: '#/definitions/utils.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Get a submission
+      summary: Get a submission (enriched)
       tags:
       - form-submissions
   /api/submissions/{id}/review:

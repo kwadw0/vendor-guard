@@ -9,9 +9,17 @@ import (
 type EmptyData struct{}
 
 type SuccessResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message,omitempty"`
-	Data    interface{}      `json:"data,omitempty"`
+	Success bool        `json:"success"`
+	Message string      `json:"message,omitempty"`
+	Data    interface{} `json:"data,omitempty"`
+	Meta    interface{} `json:"meta,omitempty"`
+}
+
+type PaginationMeta struct {
+	Page       int `json:"page"`
+	Limit      int `json:"limit"`
+	Total      int `json:"total"`
+	TotalPages int `json:"total_pages"`
 }
 
 type ErrorResponse struct {
@@ -24,10 +32,26 @@ func WriteJSON(w http.ResponseWriter, status int, message string, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
-	resp := SuccessResponse {
+	resp := SuccessResponse{
 		Success: true,
 		Message: message,
 		Data:    data,
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		slog.Error("failed to encode response", "error", err)
+	}
+}
+
+func WriteJSONWithMeta(w http.ResponseWriter, status int, message string, data any, meta any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+
+	resp := SuccessResponse{
+		Success: true,
+		Message: message,
+		Data:    data,
+		Meta:    meta,
 	}
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {

@@ -24,11 +24,33 @@ type FormSubmissionResponse struct {
 	UpdatedAt   string                 `json:"updated_at"`
 }
 
+// Enriched response always returned by list endpoints (single query, no N+1)
+type EnrichedSubmissionResponse struct {
+	FormSubmissionResponse
+	FormTitle    string `json:"form_title,omitempty"`
+	FormStatus   string `json:"form_status,omitempty"`
+	PartnerName  string `json:"partner_name,omitempty"`
+	PartnerEmail string `json:"partner_email,omitempty"`
+}
+
+type SubmissionListQuery struct {
+	Status    string `validate:"omitempty,oneof=pending approved rejected revision_required in_review"`
+	FormID    string `validate:"omitempty,uuid"`
+	PartnerID string `validate:"omitempty,uuid"`
+	Q         string `validate:"omitempty,max=200"`
+	Page      int    `validate:"omitempty,min=1"`
+	Limit     int    `validate:"omitempty,min=1,max=50"`
+	Sort      string `validate:"omitempty,oneof=submitted_at created_at"`
+	Order     string `validate:"omitempty,oneof=asc desc"`
+	DateFrom  string `validate:"omitempty"`
+	DateTo    string `validate:"omitempty"`
+}
+
 type PaginatedSubmissionsResponse struct {
-	Submissions []FormSubmissionResponse `json:"submissions"`
-	Total       int                      `json:"total"`
-	Page        int                      `json:"page"`
-	PageSize    int                      `json:"page_size"`
+	Submissions []EnrichedSubmissionResponse `json:"submissions"`
+	Total       int                          `json:"total"`
+	Page        int                          `json:"page"`
+	PageSize    int                          `json:"page_size"`
 }
 
 func formatOptionalTime(t time.Time) string {

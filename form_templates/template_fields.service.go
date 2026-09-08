@@ -7,12 +7,14 @@ import (
 	"time"
 
 	"preuvio/internal/repo"
+	"preuvio/utils"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var ErrTemplateFieldNotFound = errors.New("template field not found")
+var ErrDuplicateKey = errors.New("field key already exists in this template")
 
 type TemplateFieldService interface {
 	CreateField(ctx context.Context, templateID string, dto CreateTemplateFieldDto) (TemplateFieldResponse, error)
@@ -65,16 +67,32 @@ func (s *templateFieldService) CreateField(ctx context.Context, templateID strin
 	if !section.TemplateID.Valid || uuid.UUID(section.TemplateID.Bytes) != templateUUID {
 		return TemplateFieldResponse{}, ErrTemplateFieldNotFound
 	}
-	field, err := s.repo.CreateFormField(ctx, repo.CreateFormFieldParams{
-		FormID: pgtype.UUID{Valid: false}, TemplateID: pgtype.UUID{Bytes: templateUUID, Valid: true},
-		SectionID: sectionUUID, FieldType: dto.FieldType, Label: dto.Label, Key: dto.Key,
-		Description: pgtype.Text{String: dto.Description, Valid: dto.Description != ""},
-		Placeholder: pgtype.Text{String: dto.Placeholder, Valid: dto.Placeholder != ""},
-		IsRequired: dto.IsRequired, SortOrder: int32(dto.SortOrder),
-		Validation: validationJSON, Options: optionsJSON,
-	})
-	if err != nil {
-		return TemplateFieldResponse{}, err
+	// A lock: key is background, server-generated fld_8char. dto.Key ignored.
+	var field repo.FormField
+	created := false
+	for i := 0; i < 3; i++ {
+		key, err := utils.GenerateFieldKey()
+		if err != nil {
+			return TemplateFieldResponse{}, err
+		}
+		field, err = s.repo.CreateFormField(ctx, repo.CreateFormFieldParams{
+			FormID: pgtype.UUID{Valid: false}, TemplateID: pgtype.UUID{Bytes: templateUUID, Valid: true},
+			SectionID: sectionUUID, FieldType: dto.FieldType, Label: dto.Label, Key: key,
+			Description: pgtype.Text{String: dto.Description, Valid: dto.Description != ""},
+			Placeholder: pgtype.Text{String: dto.Placeholder, Valid: dto.Placeholder != ""},
+			IsRequired: dto.IsRequired, SortOrder: int32(dto.SortOrder),
+			Validation: validationJSON, Options: optionsJSON,
+		})
+		if err == nil {
+			created = true
+			break
+		}
+		if !utils.IsUniqueViolation(err) {
+			return TemplateFieldResponse{}, err
+		}
+	}
+	if !created {
+		return TemplateFieldResponse{}, ErrDuplicateKey
 	}
 	return mapTemplateFieldToResponse(field), nil
 }
@@ -121,8 +139,9 @@ func (s *templateFieldService) UpdateField(ctx context.Context, fieldID string, 
 			return TemplateFieldResponse{}, err
 		}
 	}
+	// A lock: key immutable after create. dto.Key ignored.
 	updated, err := s.repo.UpdateFormField(ctx, repo.UpdateFormFieldParams{
-		ID: fieldUUID, FieldType: dto.FieldType, Label: dto.Label, Key: dto.Key,
+		ID: fieldUUID, FieldType: dto.FieldType, Label: dto.Label,
 		Description: pgtype.Text{String: dto.Description, Valid: dto.Description != ""},
 		Placeholder: pgtype.Text{String: dto.Placeholder, Valid: dto.Placeholder != ""},
 		IsRequired: dto.IsRequired, SortOrder: int32(dto.SortOrder),

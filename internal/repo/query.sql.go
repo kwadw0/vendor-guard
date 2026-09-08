@@ -1310,6 +1310,59 @@ func (q *Queries) GetRoleByName(ctx context.Context, name string) (Role, error) 
 	return i, err
 }
 
+const getSubmissionEnrichedByID = `-- name: GetSubmissionEnrichedByID :one
+SELECT fs.id, fs.form_id, fs.partner_id, fs.submitted_by, fs.status, fs.responses, fs.submitted_at, fs.reviewed_at, fs.reviewed_by, fs.created_at, fs.updated_at,
+       f.title AS form_title,
+       f.status AS form_status,
+       p.name AS partner_name,
+       p.email AS partner_email
+FROM form_submissions fs
+JOIN forms f ON f.id = fs.form_id
+JOIN partners p ON p.id = fs.partner_id
+WHERE fs.id = $1
+`
+
+type GetSubmissionEnrichedByIDRow struct {
+	ID           uuid.UUID          `json:"id"`
+	FormID       uuid.UUID          `json:"form_id"`
+	PartnerID    uuid.UUID          `json:"partner_id"`
+	SubmittedBy  pgtype.UUID        `json:"submitted_by"`
+	Status       string             `json:"status"`
+	Responses    []byte             `json:"responses"`
+	SubmittedAt  pgtype.Timestamptz `json:"submitted_at"`
+	ReviewedAt   pgtype.Timestamptz `json:"reviewed_at"`
+	ReviewedBy   pgtype.UUID        `json:"reviewed_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	FormTitle    string             `json:"form_title"`
+	FormStatus   string             `json:"form_status"`
+	PartnerName  string             `json:"partner_name"`
+	PartnerEmail string             `json:"partner_email"`
+}
+
+func (q *Queries) GetSubmissionEnrichedByID(ctx context.Context, id uuid.UUID) (GetSubmissionEnrichedByIDRow, error) {
+	row := q.db.QueryRow(ctx, getSubmissionEnrichedByID, id)
+	var i GetSubmissionEnrichedByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.FormID,
+		&i.PartnerID,
+		&i.SubmittedBy,
+		&i.Status,
+		&i.Responses,
+		&i.SubmittedAt,
+		&i.ReviewedAt,
+		&i.ReviewedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.FormTitle,
+		&i.FormStatus,
+		&i.PartnerName,
+		&i.PartnerEmail,
+	)
+	return i, err
+}
+
 const getTemplateFieldsByTemplateID = `-- name: GetTemplateFieldsByTemplateID :many
 SELECT id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at, template_id FROM form_fields
 WHERE template_id = $1
@@ -1506,6 +1559,114 @@ func (q *Queries) ListRoles(ctx context.Context) ([]Role, error) {
 	return items, nil
 }
 
+const listSubmissionsEnriched = `-- name: ListSubmissionsEnriched :many
+SELECT fs.id, fs.form_id, fs.partner_id, fs.submitted_by, fs.status, fs.responses, fs.submitted_at, fs.reviewed_at, fs.reviewed_by, fs.created_at, fs.updated_at,
+       f.title  AS form_title,
+       f.status AS form_status,
+       p.name   AS partner_name,
+       p.email  AS partner_email,
+       COUNT(*) OVER() AS total_count
+FROM form_submissions fs
+JOIN forms f ON f.id = fs.form_id
+JOIN partners p ON p.id = fs.partner_id
+WHERE f.organization_id = $1
+  AND ($2::uuid IS NULL OR fs.form_id = $2::uuid)
+  AND ($3::text IS NULL OR fs.status = $3::text)
+  AND ($4::uuid IS NULL OR fs.partner_id = $4::uuid)
+  AND ($5::text IS NULL OR f.title ILIKE '%' || $5 || '%' OR p.name ILIKE '%' || $5 || '%' OR p.email ILIKE '%' || $5 || '%' OR fs.responses::text ILIKE '%' || $5 || '%')
+  AND ($6::timestamptz IS NULL OR fs.submitted_at >= $6::timestamptz)
+  AND ($7::timestamptz IS NULL OR fs.submitted_at <= $7::timestamptz)
+ORDER BY
+  CASE WHEN $8::text = 'submitted_at' AND $9::text = 'asc' THEN fs.submitted_at END ASC,
+  CASE WHEN $8::text = 'submitted_at' AND $9::text = 'desc' THEN fs.submitted_at END DESC,
+  CASE WHEN $8::text = 'created_at' AND $9::text = 'asc' THEN fs.created_at END ASC,
+  CASE WHEN $8::text = 'created_at' AND $9::text = 'desc' THEN fs.created_at END DESC,
+  fs.submitted_at DESC
+LIMIT $11 OFFSET $10
+`
+
+type ListSubmissionsEnrichedParams struct {
+	OrganizationID uuid.UUID          `json:"organization_id"`
+	FormID         pgtype.UUID        `json:"form_id"`
+	Status         pgtype.Text        `json:"status"`
+	PartnerID      pgtype.UUID        `json:"partner_id"`
+	Q              pgtype.Text        `json:"q"`
+	DateFrom       pgtype.Timestamptz `json:"date_from"`
+	DateTo         pgtype.Timestamptz `json:"date_to"`
+	SortCol        string             `json:"sort_col"`
+	SortOrder      string             `json:"sort_order"`
+	OffsetVal      int32              `json:"offset_val"`
+	LimitVal       int32              `json:"limit_val"`
+}
+
+type ListSubmissionsEnrichedRow struct {
+	ID           uuid.UUID          `json:"id"`
+	FormID       uuid.UUID          `json:"form_id"`
+	PartnerID    uuid.UUID          `json:"partner_id"`
+	SubmittedBy  pgtype.UUID        `json:"submitted_by"`
+	Status       string             `json:"status"`
+	Responses    []byte             `json:"responses"`
+	SubmittedAt  pgtype.Timestamptz `json:"submitted_at"`
+	ReviewedAt   pgtype.Timestamptz `json:"reviewed_at"`
+	ReviewedBy   pgtype.UUID        `json:"reviewed_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	FormTitle    string             `json:"form_title"`
+	FormStatus   string             `json:"form_status"`
+	PartnerName  string             `json:"partner_name"`
+	PartnerEmail string             `json:"partner_email"`
+	TotalCount   int64              `json:"total_count"`
+}
+
+func (q *Queries) ListSubmissionsEnriched(ctx context.Context, arg ListSubmissionsEnrichedParams) ([]ListSubmissionsEnrichedRow, error) {
+	rows, err := q.db.Query(ctx, listSubmissionsEnriched,
+		arg.OrganizationID,
+		arg.FormID,
+		arg.Status,
+		arg.PartnerID,
+		arg.Q,
+		arg.DateFrom,
+		arg.DateTo,
+		arg.SortCol,
+		arg.SortOrder,
+		arg.OffsetVal,
+		arg.LimitVal,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListSubmissionsEnrichedRow
+	for rows.Next() {
+		var i ListSubmissionsEnrichedRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FormID,
+			&i.PartnerID,
+			&i.SubmittedBy,
+			&i.Status,
+			&i.Responses,
+			&i.SubmittedAt,
+			&i.ReviewedAt,
+			&i.ReviewedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.FormTitle,
+			&i.FormStatus,
+			&i.PartnerName,
+			&i.PartnerEmail,
+			&i.TotalCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUsers = `-- name: ListUsers :many
 SELECT id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, partner_id
 FROM users
@@ -1644,13 +1805,12 @@ const updateFormField = `-- name: UpdateFormField :one
 UPDATE form_fields SET
   field_type = $2,
   label = $3,
-  key = $4,
-  description = $5,
-  placeholder = $6,
-  is_required = $7,
-  sort_order = $8,
-  validation = $9,
-  options = $10
+  description = $4,
+  placeholder = $5,
+  is_required = $6,
+  sort_order = $7,
+  validation = $8,
+  options = $9
 WHERE id = $1
 RETURNING id, form_id, section_id, field_type, label, key, description, placeholder, is_required, sort_order, validation, options, created_at, updated_at, template_id
 `
@@ -1659,7 +1819,6 @@ type UpdateFormFieldParams struct {
 	ID          uuid.UUID   `json:"id"`
 	FieldType   string      `json:"field_type"`
 	Label       string      `json:"label"`
-	Key         string      `json:"key"`
 	Description pgtype.Text `json:"description"`
 	Placeholder pgtype.Text `json:"placeholder"`
 	IsRequired  bool        `json:"is_required"`
@@ -1673,7 +1832,6 @@ func (q *Queries) UpdateFormField(ctx context.Context, arg UpdateFormFieldParams
 		arg.ID,
 		arg.FieldType,
 		arg.Label,
-		arg.Key,
 		arg.Description,
 		arg.Placeholder,
 		arg.IsRequired,
