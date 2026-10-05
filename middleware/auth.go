@@ -33,16 +33,22 @@ func GetRoleID(r *http.Request) string {
 func RequireAuth(jwtSecret string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+			token := authHeader
+			// Accept "Bearer <token>" case-insensitively, or a bare token
+			// (Swagger Authorize modal often pastes the raw JWT).
+			if parts := strings.SplitN(authHeader, " ", 2); len(parts) == 2 && strings.EqualFold(parts[0], "bearer") {
+				token = strings.TrimSpace(parts[1])
+			}
+			if token == "" {
 				utils.ErrorJSON(w, http.StatusUnauthorized, errUnauthorized, "UNAUTHORIZED")
 				return
 			}
 
-			token := strings.TrimPrefix(authHeader, "Bearer ")
-
 			claims, err := jwtutil.ValidateToken(token, jwtSecret)
-			if err != nil {
+			// Empty UserID means a refresh token (or foreign JWT) was sent
+			// as the access token — reject explicitly instead of injecting "".
+			if err != nil || claims.UserID == "" {
 				utils.ErrorJSON(w, http.StatusUnauthorized, errUnauthorized, "UNAUTHORIZED")
 				return
 			}

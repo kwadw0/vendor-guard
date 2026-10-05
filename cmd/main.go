@@ -10,6 +10,7 @@ import (
 	"github.com/joho/godotenv"
 
 	_ "preuvio/docs"
+	"preuvio/mail"
 )
 
 // @title			Preuvio API
@@ -23,6 +24,10 @@ import (
 // @license.url	http://www.apache.org/licenses/LICENSE-2.0.html
 // @host			localhost:8000
 // @BasePath		/
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
+// @description					Type "Bearer" followed by a space and JWT token.
 func main() {
 	Logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
@@ -38,12 +43,19 @@ func main() {
 		jwtSecret = "supersecret_default_key"
 	}
 
+	mailCfg := mail.LoadConfig()
+	if err := mailCfg.Validate(); err != nil {
+		Logger.Warn("Invalid mail config, mail will be disabled", "error", err)
+		mailCfg.Host = ""
+	}
+
 	cfg := config{
 		Addr: ":" + os.Getenv("PORT"),
 		db: dbConfig{
 			DSN: os.Getenv("DATABASE_URL"),
 		},
 		jwtSecret: jwtSecret,
+		mail:      mailCfg,
 	}
 
 	conn, err := pgxpool.New(context.Background(), cfg.db.DSN)

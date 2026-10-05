@@ -78,6 +78,35 @@ UPDATE users SET
   refresh_token_expires_at = NULL
 WHERE id = $1;
 
+-- name: VerifyUserEmail :one
+UPDATE users SET email_verified = true WHERE id = $1 RETURNING *;
+
+-- name: CreateEmailVerificationToken :one
+INSERT INTO email_verification_tokens (user_id, token, expires_at)
+VALUES ($1, $2, $3) RETURNING *;
+
+-- name: GetEmailVerificationByToken :one
+SELECT * FROM email_verification_tokens WHERE token = $1;
+
+-- name: DeleteEmailVerificationByUserID :exec
+DELETE FROM email_verification_tokens WHERE user_id = $1;
+
+-- name: DeleteEmailVerificationByToken :exec
+DELETE FROM email_verification_tokens WHERE token = $1;
+
+-- name: CreatePasswordResetToken :one
+INSERT INTO password_reset_tokens (user_id, token, expires_at)
+VALUES ($1, $2, $3) RETURNING *;
+
+-- name: GetPasswordResetByToken :one
+SELECT * FROM password_reset_tokens WHERE token = $1;
+
+-- name: MarkPasswordResetUsed :one
+UPDATE password_reset_tokens SET used_at = now() WHERE id = $1 RETURNING *;
+
+-- name: DeletePasswordResetByToken :exec
+DELETE FROM password_reset_tokens WHERE token = $1;
+
 
 
 -- ============================================================

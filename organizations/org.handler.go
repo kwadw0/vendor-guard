@@ -79,6 +79,7 @@ func (h *OrganizationHandler) GetOrganizationByUserID(w http.ResponseWriter, r *
 		utils.ErrorJSON(w, http.StatusUnauthorized, errors.New("unauthorized"), "UNAUTHORIZED")
 		return
 	}
+	
 
 	org, err := h.service.GetOrganizationByUserID(r.Context(), userID)
 	if err != nil {
@@ -96,13 +97,15 @@ func (h *OrganizationHandler) GetOrganizationByUserID(w http.ResponseWriter, r *
 // GetOrganizationById godoc
 //
 //	@Summary		Get organization by ID
-//	@Description	Retrieve organization details by its UUID
+//	@Description	Retrieve organization details by its UUID. Requires Bearer token.
 //	@Tags			organizations
 //	@Produce		json
 //	@Param			id	path		string	true	"Organization ID"
 //	@Success		200	{object}	utils.SuccessResponse{data=organizations.OrganizationResponseDto}
 //	@Failure		400	{object}	utils.ErrorResponse
+//	@Failure		401	{object}	utils.ErrorResponse
 //	@Failure		404	{object}	utils.ErrorResponse
+//	@Security		BearerAuth
 //	@Router			/api/organizations/{id} [get]
 func (h *OrganizationHandler) GetOrganizationById(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
@@ -127,13 +130,15 @@ func (h *OrganizationHandler) GetOrganizationById(w http.ResponseWriter, r *http
 // GetAllOrganizations godoc
 //
 //	@Summary		List all organizations (paginated)
-//	@Description	Retrieve a list of all organizations
+//	@Description	Retrieve a list of all organizations. Requires Bearer token.
 //	@Tags			organizations
 //	@Produce		json
 //	@Param			page	query		int	false	"Page (1-based, default 1)"	Minimum(1)
 //	@Param			limit	query		int	false	"Limit (default 20, max 50)"	Minimum(1)	Maximum(50)
 //	@Success		200		{object}	utils.SuccessResponse{data=[]organizations.OrganizationResponseDto,meta=utils.PaginationMeta}
+//	@Failure		401		{object}	utils.ErrorResponse
 //	@Failure		500		{object}	utils.ErrorResponse
+//	@Security		BearerAuth
 //	@Router			/api/organizations [get]
 func (h *OrganizationHandler) GetAllOrganizations(w http.ResponseWriter, r *http.Request) {
 	orgs, err := h.service.GetAllOrganizations(r.Context())
@@ -149,17 +154,25 @@ func (h *OrganizationHandler) GetAllOrganizations(w http.ResponseWriter, r *http
 // UpdateOrganization godoc
 //
 //	@Summary		Update an organization
-//	@Description	Update an existing organization by ID
+//	@Description	Partial update of an existing organization by ID. Only members of the organization may update it. Omitted fields keep existing values.
 //	@Tags			organizations
 //	@Accept			json
 //	@Produce		json
 //	@Param			id		path		string					true	"Organization ID"
-//	@Param			request	body		UpdateOrganizationDto	true	"Updated organization data"
+//	@Param			request	body		UpdateOrganizationDto	true	"Updated organization data (all fields optional)"
 //	@Success		200		{object}	utils.SuccessResponse{data=organizations.OrganizationResponseDto}
 //	@Failure		400		{object}	utils.ErrorResponse
-//	@Failure		500		{object}	utils.ErrorResponse
+//	@Failure		401		{object}	utils.ErrorResponse
+//	@Failure		403		{object}	utils.ErrorResponse
+//	@Failure		404		{object}	utils.ErrorResponse
+//	@Security		BearerAuth
 //	@Router			/api/organizations/{id} [put]
 func (h *OrganizationHandler) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
+	if userID == "" {
+		utils.ErrorJSON(w, http.StatusUnauthorized, errors.New("unauthorized"), "UNAUTHORIZED")
+		return
+	}
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		utils.ErrorJSON(w, http.StatusBadRequest, err, "INVALID_ID")
@@ -177,8 +190,17 @@ func (h *OrganizationHandler) UpdateOrganization(w http.ResponseWriter, r *http.
 		return
 	}
 
+	if err := h.service.VerifyOrgMember(r.Context(), userID, id); err != nil {
+		utils.ErrorJSON(w, http.StatusForbidden, err, "FORBIDDEN")
+		return
+	}
+
 	org, err := h.service.UpdateOrganization(r.Context(), id, dto)
 	if err != nil {
+		if errors.Is(err, ErrOrganizationNotFound) {
+			utils.ErrorJSON(w, http.StatusNotFound, err, "NOT_FOUND")
+			return
+		}
 		utils.ErrorJSON(w, http.StatusInternalServerError, err, "INTERNAL_ERROR")
 		return
 	}
@@ -189,22 +211,39 @@ func (h *OrganizationHandler) UpdateOrganization(w http.ResponseWriter, r *http.
 // DeleteOrganization godoc
 //
 //	@Summary		Delete an organization
-//	@Description	Delete an organization by ID
+//	@Description	Delete an organization by ID. Only members of the organization may delete it.
 //	@Tags			organizations
 //	@Produce		json
 //	@Param			id	path		string	true	"Organization ID"
 //	@Success		200	{object}	utils.SuccessResponse{data=utils.EmptyData}
 //	@Failure		400	{object}	utils.ErrorResponse
-//	@Failure		500	{object}	utils.ErrorResponse
+//	@Failure		401	{object}	utils.ErrorResponse
+//	@Failure		403	{object}	utils.ErrorResponse
+//	@Failure		404	{object}	utils.ErrorResponse
+//	@Security		BearerAuth
 //	@Router			/api/organizations/{id} [delete]
 func (h *OrganizationHandler) DeleteOrganization(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
+	if userID == "" {
+		utils.ErrorJSON(w, http.StatusUnauthorized, errors.New("unauthorized"), "UNAUTHORIZED")
+		return
+	}
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		utils.ErrorJSON(w, http.StatusBadRequest, err, "INVALID_ID")
 		return
 	}
 
+	if err := h.service.VerifyOrgMember(r.Context(), userID, id); err != nil {
+		utils.ErrorJSON(w, http.StatusForbidden, err, "FORBIDDEN")
+		return
+	}
+
 	if err := h.service.DeleteOrganization(r.Context(), id); err != nil {
+		if errors.Is(err, ErrOrganizationNotFound) {
+			utils.ErrorJSON(w, http.StatusNotFound, err, "NOT_FOUND")
+			return
+		}
 		utils.ErrorJSON(w, http.StatusInternalServerError, err, "INTERNAL_ERROR")
 		return
 	}

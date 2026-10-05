@@ -24,6 +24,46 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/auth/forgot-password": {
+            "post": {
+                "description": "Creates a reset token and emails a reset link (always 200 to avoid enumeration)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Request password reset",
+                "parameters": [
+                    {
+                        "description": "Email address",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.ForgotPasswordDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reset link sent if account exists",
+                        "schema": {
+                            "$ref": "#/definitions/utils.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/auth/login": {
             "post": {
                 "description": "Authenticates a user and returns access and refresh tokens",
@@ -152,6 +192,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/auth/reset-password": {
+            "post": {
+                "description": "Consumes a valid reset token and sets a new password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Reset password with token",
+                "parameters": [
+                    {
+                        "description": "Token and new password",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.ResetPasswordDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password reset successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/auth/signup": {
             "post": {
                 "description": "Creates a new user and returns access and refresh tokens",
@@ -209,6 +289,41 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/verify-email": {
+            "get": {
+                "description": "Verifies a user's email using the token sent at signup",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify email address",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Verification token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email verified successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/utils.ErrorResponse"
                         }
@@ -1104,7 +1219,7 @@ const docTemplate = `{
         },
         "/api/organizations": {
             "get": {
-                "description": "Retrieve a list of all organizations",
+                "description": "Retrieve a list of all organizations. Requires Bearer token.",
                 "produces": [
                     "application/json"
                 ],
@@ -1154,13 +1269,24 @@ const docTemplate = `{
                             ]
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/utils.ErrorResponse"
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
             },
             "post": {
                 "description": "Creates a new organization and links it to the authenticated user. Requires Bearer token.",
@@ -1281,7 +1407,7 @@ const docTemplate = `{
         },
         "/api/organizations/{id}": {
             "get": {
-                "description": "Retrieve organization details by its UUID",
+                "description": "Retrieve organization details by its UUID. Requires Bearer token.",
                 "produces": [
                     "application/json"
                 ],
@@ -1323,16 +1449,27 @@ const docTemplate = `{
                             "$ref": "#/definitions/utils.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/utils.ErrorResponse"
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
             },
             "put": {
-                "description": "Update an existing organization by ID",
+                "description": "Partial update of an existing organization by ID. Only members of the organization may update it. Omitted fields keep existing values.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1352,7 +1489,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Updated organization data",
+                        "description": "Updated organization data (all fields optional)",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -1386,16 +1523,33 @@ const docTemplate = `{
                             "$ref": "#/definitions/utils.ErrorResponse"
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/utils.ErrorResponse"
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
             },
             "delete": {
-                "description": "Delete an organization by ID",
+                "description": "Delete an organization by ID. Only members of the organization may delete it.",
                 "produces": [
                     "application/json"
                 ],
@@ -1437,13 +1591,30 @@ const docTemplate = `{
                             "$ref": "#/definitions/utils.ErrorResponse"
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/utils.ErrorResponse"
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
             }
         },
         "/api/partners": {
@@ -3503,6 +3674,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "auth.ForgotPasswordDto": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
         "auth.LoginDto": {
             "type": "object",
             "required": [
@@ -3525,6 +3707,22 @@ const docTemplate = `{
             ],
             "properties": {
                 "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "auth.ResetPasswordDto": {
+            "type": "object",
+            "required": [
+                "new_password",
+                "token"
+            ],
+            "properties": {
+                "new_password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "token": {
                     "type": "string"
                 }
             }
@@ -4509,25 +4707,21 @@ const docTemplate = `{
         },
         "organizations.UpdateOrganizationDto": {
             "type": "object",
-            "required": [
-                "industry",
-                "name",
-                "owner_role",
-                "primary_customer_type",
-                "team_size"
-            ],
             "properties": {
                 "description": {
                     "type": "string"
                 },
                 "industry": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                 },
                 "owner_role": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                 },
                 "primary_customer_type": {
                     "type": "string",
@@ -4538,7 +4732,8 @@ const docTemplate = `{
                     ]
                 },
                 "team_size": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                 },
                 "website_url": {
                     "type": "string"
@@ -4841,6 +5036,14 @@ const docTemplate = `{
                     "type": "boolean"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`

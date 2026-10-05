@@ -13,6 +13,9 @@ type Handler interface {
 	Signup(w http.ResponseWriter, r *http.Request)
 	Login(w http.ResponseWriter, r *http.Request)
 	RefreshToken(w http.ResponseWriter, r *http.Request)
+	VerifyEmail(w http.ResponseWriter, r *http.Request)
+	ForgotPassword(w http.ResponseWriter, r *http.Request)
+	ResetPassword(w http.ResponseWriter, r *http.Request)
 }
 
 type handler struct {
@@ -136,4 +139,91 @@ func (h *handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSON(w, http.StatusOK, "Token refreshed successfully", res)
+}
+
+// VerifyEmail godoc
+//
+//	@Summary		Verify email address
+//	@Description	Verifies a user's email using the token sent at signup
+//	@Tags			auth
+//	@Produce		json
+//	@Param			token	query		string	true	"Verification token"
+//	@Success		200		{object}	utils.SuccessResponse	"Email verified successfully"
+//	@Failure		400		{object}	utils.ErrorResponse
+//	@Router			/api/auth/verify-email [get]
+func (h *handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		utils.ErrorJSON(w, http.StatusBadRequest, errors.New("missing token"), "VALIDATION_ERROR")
+		return
+	}
+	if err := h.service.VerifyEmail(r.Context(), token); err != nil {
+		if errors.Is(err, ErrInvalidVerifyToken) {
+			utils.ErrorJSON(w, http.StatusBadRequest, err, "INVALID_TOKEN")
+			return
+		}
+		utils.ErrorJSON(w, http.StatusInternalServerError, err, "INTERNAL_ERROR")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, "Email verified successfully", nil)
+}
+
+// ForgotPassword godoc
+//
+//	@Summary		Request password reset
+//	@Description	Creates a reset token and emails a reset link (always 200 to avoid enumeration)
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		ForgotPasswordDto	true	"Email address"
+//	@Success		200		{object}	utils.SuccessResponse	"Reset link sent if account exists"
+//	@Failure		400		{object}	utils.ErrorResponse
+//	@Router			/api/auth/forgot-password [post]
+func (h *handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var dto ForgotPasswordDto
+	if err := utils.ReadJSON(w, r, &dto); err != nil {
+		utils.ErrorJSON(w, http.StatusBadRequest, err, "BAD_REQUEST")
+		return
+	}
+	if err := h.validator.Struct(dto); err != nil {
+		utils.ErrorJSON(w, http.StatusBadRequest, err, "VALIDATION_ERROR")
+		return
+	}
+	if err := h.service.ForgotPassword(r.Context(), dto); err != nil {
+		utils.ErrorJSON(w, http.StatusInternalServerError, err, "INTERNAL_ERROR")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, "If an account exists, a reset link has been sent", nil)
+}
+
+// ResetPassword godoc
+//
+//	@Summary		Reset password with token
+//	@Description	Consumes a valid reset token and sets a new password
+//	@Tags			auth
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		ResetPasswordDto	true	"Token and new password"
+//	@Success		200		{object}	utils.SuccessResponse	"Password reset successfully"
+//	@Failure		400		{object}	utils.ErrorResponse
+//	@Router			/api/auth/reset-password [post]
+func (h *handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var dto ResetPasswordDto
+	if err := utils.ReadJSON(w, r, &dto); err != nil {
+		utils.ErrorJSON(w, http.StatusBadRequest, err, "BAD_REQUEST")
+		return
+	}
+	if err := h.validator.Struct(dto); err != nil {
+		utils.ErrorJSON(w, http.StatusBadRequest, err, "VALIDATION_ERROR")
+		return
+	}
+	if err := h.service.ResetPassword(r.Context(), dto); err != nil {
+		if errors.Is(err, ErrInvalidResetToken) {
+			utils.ErrorJSON(w, http.StatusBadRequest, err, "INVALID_TOKEN")
+			return
+		}
+		utils.ErrorJSON(w, http.StatusInternalServerError, err, "INTERNAL_ERROR")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, "Password reset successfully", nil)
 }

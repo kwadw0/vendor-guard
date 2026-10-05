@@ -13,6 +13,7 @@ import (
 
 type Querier interface {
 	CloneTemplateToForm(ctx context.Context, arg CloneTemplateToFormParams) (Form, error)
+	CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) (EmailVerificationToken, error)
 	// ============================================================
 	// FORMS
 	// ============================================================
@@ -36,22 +37,27 @@ type Querier interface {
 	CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (Organization, error)
 	CreatePartnerInvitation(ctx context.Context, arg CreatePartnerInvitationParams) (PartnerInvitation, error)
 	CreatePartners(ctx context.Context, arg CreatePartnersParams) (Partner, error)
+	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) (PasswordResetToken, error)
 	// ============================================================
 	// ROLES
 	// ============================================================
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteEmailVerificationByToken(ctx context.Context, token string) error
+	DeleteEmailVerificationByUserID(ctx context.Context, userID uuid.UUID) error
 	DeleteForm(ctx context.Context, id uuid.UUID) error
 	DeleteFormField(ctx context.Context, id uuid.UUID) error
 	DeleteFormSection(ctx context.Context, id uuid.UUID) error
 	DeleteFormTemplate(ctx context.Context, id uuid.UUID) error
 	DeleteOrganization(ctx context.Context, id uuid.UUID) error
 	DeletePartner(ctx context.Context, id uuid.UUID) error
+	DeletePasswordResetByToken(ctx context.Context, token string) error
 	DeleteRole(ctx context.Context, id uuid.UUID) (Role, error)
 	DeleteUser(ctx context.Context, id uuid.UUID) error
 	GetAllFormTemplates(ctx context.Context) ([]FormTemplate, error)
 	GetAllOrganizations(ctx context.Context) ([]Organization, error)
 	GetAllPartners(ctx context.Context) ([]Partner, error)
+	GetEmailVerificationByToken(ctx context.Context, token string) (EmailVerificationToken, error)
 	GetFormByID(ctx context.Context, id uuid.UUID) (Form, error)
 	GetFormFieldByID(ctx context.Context, id uuid.UUID) (FormField, error)
 	GetFormFieldsByFormID(ctx context.Context, formID pgtype.UUID) ([]FormField, error)
@@ -70,6 +76,7 @@ type Querier interface {
 	GetPartnerInvitationByToken(ctx context.Context, token string) (PartnerInvitation, error)
 	GetPartnerInvitationsByPartner(ctx context.Context, partnerID uuid.UUID) ([]PartnerInvitation, error)
 	GetPartnersByOrg(ctx context.Context, organizationID uuid.UUID) ([]Partner, error)
+	GetPasswordResetByToken(ctx context.Context, token string) (PasswordResetToken, error)
 	GetRoleByID(ctx context.Context, id uuid.UUID) (Role, error)
 	GetRoleByName(ctx context.Context, name string) (Role, error)
 	GetSubmissionEnrichedByID(ctx context.Context, id uuid.UUID) (GetSubmissionEnrichedByIDRow, error)
@@ -81,6 +88,7 @@ type Querier interface {
 	ListRoles(ctx context.Context) ([]Role, error)
 	ListSubmissionsEnriched(ctx context.Context, arg ListSubmissionsEnrichedParams) ([]ListSubmissionsEnrichedRow, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
+	MarkPasswordResetUsed(ctx context.Context, id uuid.UUID) (PasswordResetToken, error)
 	ReviewFormSubmission(ctx context.Context, arg ReviewFormSubmissionParams) (FormSubmission, error)
 	RevokeRefreshToken(ctx context.Context, id uuid.UUID) error
 	UpdateForm(ctx context.Context, arg UpdateFormParams) (Form, error)
@@ -97,6 +105,7 @@ type Querier interface {
 	UpdateUserPartner(ctx context.Context, arg UpdateUserPartnerParams) (User, error)
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (User, error)
 	UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefreshTokenParams) (User, error)
+	VerifyUserEmail(ctx context.Context, id uuid.UUID) (User, error)
 }
 
 var _ Querier = (*Queries)(nil)

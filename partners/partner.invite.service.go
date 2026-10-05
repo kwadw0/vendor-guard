@@ -5,10 +5,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"log/slog"
 	"time"
 
 	"preuvio/auth/jwt"
 	"preuvio/internal/repo"
+	"preuvio/mail"
 	"preuvio/utils"
 
 	"github.com/google/uuid"
@@ -32,10 +34,15 @@ type InviteService interface {
 type inviteService struct {
 	repo      *repo.Queries
 	jwtSecret string
+	mailer    mail.Mailer
 }
 
-func NewInviteService(r *repo.Queries, jwtSecret string) InviteService {
-	return &inviteService{repo: r, jwtSecret: jwtSecret}
+func NewInviteService(r *repo.Queries, jwtSecret string, mailers ...mail.Mailer) InviteService {
+	s := &inviteService{repo: r, jwtSecret: jwtSecret}
+	if len(mailers) > 0 {
+		s.mailer = mailers[0]
+	}
+	return s
 }
 
 func generateToken() (string, error) {
@@ -94,6 +101,12 @@ func (s *inviteService) InviteUser(ctx context.Context, partnerID, invitedByUser
 	})
 	if err != nil {
 		return InvitationResponse{}, err
+	}
+	// Invitation link via email (best-effort: never fail invite on mail error)
+	if s.mailer != nil {
+		if err := s.mailer.SendPartnerInviteEmail(ctx, dto.Email, partner.Name, token); err != nil {
+			slog.Warn("failed to queue partner invite email", "email", dto.Email, "partner_id", partnerID, "error", err)
+		}
 	}
 	return mapInvitationToResponse(invitation), nil
 }

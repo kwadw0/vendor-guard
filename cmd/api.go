@@ -17,6 +17,7 @@ import (
 	"preuvio/form_templates"
 	"preuvio/forms"
 	"preuvio/internal/repo"
+	"preuvio/mail"
 	appMiddleware "preuvio/middleware"
 	"preuvio/organizations"
 	"preuvio/partners"
@@ -62,14 +63,20 @@ func (app *application) mount() http.Handler {
 	repoQueries := repo.New(app.db)
 	authMiddleware := appMiddleware.RequireAuth(app.config.jwtSecret)
 
+	// Mail service (disabled when SMTP_HOST empty — logs instead of sending)
+	mailService := mail.NewService(app.config.mail, app.logger)
+
 	// Auth routes
-	authService := auth.NewService(repoQueries, app.config.jwtSecret)
+	authService := auth.NewService(repoQueries, app.config.jwtSecret, mailService)
 	authHandler := auth.NewHandler(authService, app.validator)
 
 	r.Route("/api/auth", func(r chi.Router) {
 		r.Post("/signup", authHandler.Signup)
 		r.Post("/login", authHandler.Login)
 		r.Post("/refresh", authHandler.RefreshToken)
+		r.Get("/verify-email", authHandler.VerifyEmail)
+		r.Post("/forgot-password", authHandler.ForgotPassword)
+		r.Post("/reset-password", authHandler.ResetPassword)
 	})
 
 	// User routes
@@ -93,17 +100,17 @@ func (app *application) mount() http.Handler {
 		r.With(authMiddleware).Post("/", orgHandler.CreateOrganization)
 		r.With(authMiddleware).Get("/me", orgHandler.GetOrganizationByUserID)
 
-		r.Get("/", orgHandler.GetAllOrganizations)
-		r.Get("/{id}", orgHandler.GetOrganizationById)
-		r.Put("/{id}", orgHandler.UpdateOrganization)
-		r.Delete("/{id}", orgHandler.DeleteOrganization)
+		r.With(authMiddleware).Get("/", orgHandler.GetAllOrganizations)
+		r.With(authMiddleware).Get("/{id}", orgHandler.GetOrganizationById)
+		r.With(authMiddleware).Put("/{id}", orgHandler.UpdateOrganization)
+		r.With(authMiddleware).Delete("/{id}", orgHandler.DeleteOrganization)
 	})
 
 	// Partner routes
 	partnerService := partners.NewService(repoQueries)
 	partnerHandler := partners.NewPartnerHandler(partnerService, app.validator)
 
-	partnerInviteService := partners.NewInviteService(repoQueries, app.config.jwtSecret)
+	partnerInviteService := partners.NewInviteService(repoQueries, app.config.jwtSecret, mailService)
 	partnerInviteHandler := partners.NewInviteHandler(partnerInviteService, app.validator)
 
 	r.Route("/api/partners", func(r chi.Router) {
@@ -216,6 +223,7 @@ type config struct {
 	Addr      string
 	jwtSecret string
 	db        dbConfig
+	mail      mail.Config
 }
 
 type dbConfig struct {

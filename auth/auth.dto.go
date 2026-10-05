@@ -21,3 +21,12 @@ type TokenResponseDto struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 }
+
+type ForgotPasswordDto struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type ResetPasswordDto struct {
+	Token       string `json:"token" validate:"required"`
+	NewPassword string `json:"new_password" validate:"required,min=8"`
+}

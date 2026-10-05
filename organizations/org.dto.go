@@ -17,13 +17,13 @@ type CreateOrganizationDto struct {
 }
 
 type UpdateOrganizationDto struct {
-	Name                string `json:"name" validate:"required"`
-	Description         string `json:"description"`
-	WebsiteURL          string `json:"website_url" validate:"omitempty,url"`
-	Industry            string `json:"industry" validate:"required"`
-	TeamSize            string `json:"team_size" validate:"required"`
-	PrimaryCustomerType string `json:"primary_customer_type" validate:"required,oneof=b2b b2c both"`
-	OwnerRole           string `json:"owner_role" validate:"required"`
+	Name                *string `json:"name" validate:"omitempty,min=1"`
+	Description         *string `json:"description"`
+	WebsiteURL          *string `json:"website_url" validate:"omitempty,url"`
+	Industry            *string `json:"industry" validate:"omitempty,min=1"`
+	TeamSize            *string `json:"team_size" validate:"omitempty,min=1"`
+	PrimaryCustomerType *string `json:"primary_customer_type" validate:"omitempty,oneof=b2b b2c both"`
+	OwnerRole           *string `json:"owner_role" validate:"omitempty,min=1"`
 }
 
 type OrganizationResponseDto struct {

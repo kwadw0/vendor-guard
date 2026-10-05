@@ -53,6 +53,30 @@ func (q *Queries) CloneTemplateToForm(ctx context.Context, arg CloneTemplateToFo
 	return i, err
 }
 
+const createEmailVerificationToken = `-- name: CreateEmailVerificationToken :one
+INSERT INTO email_verification_tokens (user_id, token, expires_at)
+VALUES ($1, $2, $3) RETURNING id, user_id, token, expires_at, created_at
+`
+
+type CreateEmailVerificationTokenParams struct {
+	UserID    uuid.UUID          `json:"user_id"`
+	Token     string             `json:"token"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+}
+
+func (q *Queries) CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) (EmailVerificationToken, error) {
+	row := q.db.QueryRow(ctx, createEmailVerificationToken, arg.UserID, arg.Token, arg.ExpiresAt)
+	var i EmailVerificationToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Token,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createForm = `-- name: CreateForm :one
 
 INSERT INTO forms (
@@ -474,6 +498,31 @@ func (q *Queries) CreatePartners(ctx context.Context, arg CreatePartnersParams) 
 	return i, err
 }
 
+const createPasswordResetToken = `-- name: CreatePasswordResetToken :one
+INSERT INTO password_reset_tokens (user_id, token, expires_at)
+VALUES ($1, $2, $3) RETURNING id, user_id, token, expires_at, used_at, created_at
+`
+
+type CreatePasswordResetTokenParams struct {
+	UserID    uuid.UUID          `json:"user_id"`
+	Token     string             `json:"token"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+}
+
+func (q *Queries) CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) (PasswordResetToken, error) {
+	row := q.db.QueryRow(ctx, createPasswordResetToken, arg.UserID, arg.Token, arg.ExpiresAt)
+	var i PasswordResetToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Token,
+		&i.ExpiresAt,
+		&i.UsedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createRole = `-- name: CreateRole :one
 
 INSERT INTO roles (
@@ -569,6 +618,24 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const deleteEmailVerificationByToken = `-- name: DeleteEmailVerificationByToken :exec
+DELETE FROM email_verification_tokens WHERE token = $1
+`
+
+func (q *Queries) DeleteEmailVerificationByToken(ctx context.Context, token string) error {
+	_, err := q.db.Exec(ctx, deleteEmailVerificationByToken, token)
+	return err
+}
+
+const deleteEmailVerificationByUserID = `-- name: DeleteEmailVerificationByUserID :exec
+DELETE FROM email_verification_tokens WHERE user_id = $1
+`
+
+func (q *Queries) DeleteEmailVerificationByUserID(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteEmailVerificationByUserID, userID)
+	return err
+}
+
 const deleteForm = `-- name: DeleteForm :exec
 DELETE FROM forms WHERE id = $1
 `
@@ -621,6 +688,15 @@ WHERE id = $1
 
 func (q *Queries) DeletePartner(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, deletePartner, id)
+	return err
+}
+
+const deletePasswordResetByToken = `-- name: DeletePasswordResetByToken :exec
+DELETE FROM password_reset_tokens WHERE token = $1
+`
+
+func (q *Queries) DeletePasswordResetByToken(ctx context.Context, token string) error {
+	_, err := q.db.Exec(ctx, deletePasswordResetByToken, token)
 	return err
 }
 
@@ -753,6 +829,23 @@ func (q *Queries) GetAllPartners(ctx context.Context) ([]Partner, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const getEmailVerificationByToken = `-- name: GetEmailVerificationByToken :one
+SELECT id, user_id, token, expires_at, created_at FROM email_verification_tokens WHERE token = $1
+`
+
+func (q *Queries) GetEmailVerificationByToken(ctx context.Context, token string) (EmailVerificationToken, error) {
+	row := q.db.QueryRow(ctx, getEmailVerificationByToken, token)
+	var i EmailVerificationToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Token,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const getFormByID = `-- name: GetFormByID :one
@@ -1276,6 +1369,24 @@ func (q *Queries) GetPartnersByOrg(ctx context.Context, organizationID uuid.UUID
 	return items, nil
 }
 
+const getPasswordResetByToken = `-- name: GetPasswordResetByToken :one
+SELECT id, user_id, token, expires_at, used_at, created_at FROM password_reset_tokens WHERE token = $1
+`
+
+func (q *Queries) GetPasswordResetByToken(ctx context.Context, token string) (PasswordResetToken, error) {
+	row := q.db.QueryRow(ctx, getPasswordResetByToken, token)
+	var i PasswordResetToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Token,
+		&i.ExpiresAt,
+		&i.UsedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getRoleByID = `-- name: GetRoleByID :one
 SELECT id, name, description, created_at, updated_at FROM roles WHERE id = $1
 `
@@ -1716,6 +1827,24 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 		return nil, err
 	}
 	return items, nil
+}
+
+const markPasswordResetUsed = `-- name: MarkPasswordResetUsed :one
+UPDATE password_reset_tokens SET used_at = now() WHERE id = $1 RETURNING id, user_id, token, expires_at, used_at, created_at
+`
+
+func (q *Queries) MarkPasswordResetUsed(ctx context.Context, id uuid.UUID) (PasswordResetToken, error) {
+	row := q.db.QueryRow(ctx, markPasswordResetUsed, id)
+	var i PasswordResetToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Token,
+		&i.ExpiresAt,
+		&i.UsedAt,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const reviewFormSubmission = `-- name: ReviewFormSubmission :one
@@ -2291,6 +2420,35 @@ type UpdateUserRefreshTokenParams struct {
 
 func (q *Queries) UpdateUserRefreshToken(ctx context.Context, arg UpdateUserRefreshTokenParams) (User, error) {
 	row := q.db.QueryRow(ctx, updateUserRefreshToken, arg.ID, arg.RefreshToken, arg.RefreshTokenExpiresAt)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Email,
+		&i.Password,
+		&i.Phone,
+		&i.OrganizationID,
+		&i.RoleID,
+		&i.AvatarUrl,
+		&i.IsActive,
+		&i.EmailVerified,
+		&i.PhoneVerified,
+		&i.RefreshToken,
+		&i.RefreshTokenExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.PartnerID,
+	)
+	return i, err
+}
+
+const verifyUserEmail = `-- name: VerifyUserEmail :one
+UPDATE users SET email_verified = true WHERE id = $1 RETURNING id, first_name, last_name, email, password, phone, organization_id, role_id, avatar_url, is_active, email_verified, phone_verified, refresh_token, refresh_token_expires_at, created_at, updated_at, partner_id
+`
+
+func (q *Queries) VerifyUserEmail(ctx context.Context, id uuid.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, verifyUserEmail, id)
 	var i User
 	err := row.Scan(
 		&i.ID,

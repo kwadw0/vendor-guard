@@ -1,5 +1,12 @@
 basePath: /
 definitions:
+  auth.ForgotPasswordDto:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
   auth.LoginDto:
     properties:
       email:
@@ -16,6 +23,17 @@ definitions:
         type: string
     required:
     - refresh_token
+    type: object
+  auth.ResetPasswordDto:
+    properties:
+      new_password:
+        minLength: 8
+        type: string
+      token:
+        type: string
+    required:
+    - new_password
+    - token
     type: object
   auth.SignupDto:
     properties:
@@ -705,10 +723,13 @@ definitions:
       description:
         type: string
       industry:
+        minLength: 1
         type: string
       name:
+        minLength: 1
         type: string
       owner_role:
+        minLength: 1
         type: string
       primary_customer_type:
         enum:
@@ -717,15 +738,10 @@ definitions:
         - both
         type: string
       team_size:
+        minLength: 1
         type: string
       website_url:
         type: string
-    required:
-    - industry
-    - name
-    - owner_role
-    - primary_customer_type
-    - team_size
     type: object
   partners.AcceptInviteDto:
     properties:
@@ -942,6 +958,33 @@ info:
   title: Preuvio API
   version: "1.0"
 paths:
+  /api/auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Creates a reset token and emails a reset link (always 200 to avoid
+        enumeration)
+      parameters:
+      - description: Email address
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ForgotPasswordDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reset link sent if account exists
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Request password reset
+      tags:
+      - auth
   /api/auth/login:
     post:
       consumes:
@@ -1021,6 +1064,32 @@ paths:
       summary: Refresh access token
       tags:
       - auth
+  /api/auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Consumes a valid reset token and sets a new password
+      parameters:
+      - description: Token and new password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.ResetPasswordDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password reset successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Reset password with token
+      tags:
+      - auth
   /api/auth/signup:
     post:
       consumes:
@@ -1058,6 +1127,29 @@ paths:
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
       summary: Register a new user
+      tags:
+      - auth
+  /api/auth/verify-email:
+    get:
+      description: Verifies a user's email using the token sent at signup
+      parameters:
+      - description: Verification token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email verified successfully
+          schema:
+            $ref: '#/definitions/utils.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Verify email address
       tags:
       - auth
   /api/forms:
@@ -1599,7 +1691,7 @@ paths:
       - form-submissions
   /api/organizations:
     get:
-      description: Retrieve a list of all organizations
+      description: Retrieve a list of all organizations. Requires Bearer token.
       parameters:
       - description: Page (1-based, default 1)
         in: query
@@ -1628,10 +1720,16 @@ paths:
                 meta:
                   $ref: '#/definitions/utils.PaginationMeta'
               type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: List all organizations (paginated)
       tags:
       - organizations
@@ -1678,7 +1776,8 @@ paths:
       - organizations
   /api/organizations/{id}:
     delete:
-      description: Delete an organization by ID
+      description: Delete an organization by ID. Only members of the organization
+        may delete it.
       parameters:
       - description: Organization ID
         in: path
@@ -1701,15 +1800,25 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
-        "500":
-          description: Internal Server Error
+        "401":
+          description: Unauthorized
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Delete an organization
       tags:
       - organizations
     get:
-      description: Retrieve organization details by its UUID
+      description: Retrieve organization details by its UUID. Requires Bearer token.
       parameters:
       - description: Organization ID
         in: path
@@ -1732,24 +1841,31 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
         "404":
           description: Not Found
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Get organization by ID
       tags:
       - organizations
     put:
       consumes:
       - application/json
-      description: Update an existing organization by ID
+      description: Partial update of an existing organization by ID. Only members
+        of the organization may update it. Omitted fields keep existing values.
       parameters:
       - description: Organization ID
         in: path
         name: id
         required: true
         type: string
-      - description: Updated organization data
+      - description: Updated organization data (all fields optional)
         in: body
         name: request
         required: true
@@ -1771,10 +1887,20 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
-        "500":
-          description: Internal Server Error
+        "401":
+          description: Unauthorized
           schema:
             $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Update an organization
       tags:
       - organizations
@@ -3055,4 +3181,10 @@ paths:
       summary: Get current user
       tags:
       - users
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
