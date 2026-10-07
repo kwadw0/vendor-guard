@@ -1,14 +1,16 @@
 package forms
 
 type CreateFormDto struct {
-	Title       string `json:"title" validate:"required,min=2,max=255"`
-	Description string `json:"description" validate:"omitempty,max=1000"`
+	Title         string `json:"title" validate:"required,min=2,max=255"`
+	Description   string `json:"description" validate:"omitempty,max=1000"`
+	AllowResubmit *bool  `json:"allow_resubmit,omitempty"`
 }
 
 type UpdateFormDto struct {
-	Title       string `json:"title" validate:"required,min=2,max=255"`
-	Description string `json:"description" validate:"omitempty,max=1000"`
-	Status      string `json:"status" validate:"omitempty,oneof=draft active archived"`
+	Title         string `json:"title" validate:"required,min=2,max=255"`
+	Description   string `json:"description" validate:"omitempty,max=1000"`
+	Status        string `json:"status" validate:"omitempty,oneof=draft active archived"`
+	AllowResubmit *bool  `json:"allow_resubmit,omitempty"`
 }
 
 type FormResponse struct {
@@ -18,6 +20,7 @@ type FormResponse struct {
 	Title          string `json:"title"`
 	Description    string `json:"description,omitempty"`
 	Status         string `json:"status"`
+	AllowResubmit  bool   `json:"allow_resubmit"`
 	CreatedAt      string `json:"created_at"`
 	UpdatedAt      string `json:"updated_at"`
 }

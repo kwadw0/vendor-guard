@@ -164,6 +164,15 @@ func (s *partnerService) UpdatePartner(
 		return PartnerResponse{}, ErrAccessDenied
 	}
 
+	// Status is optional on update — omitted keeps the current value.
+	status := partner.Status
+	if dto.Status != "" {
+		status = repo.NullPartnerStatus{
+			PartnerStatus: repo.PartnerStatus(dto.Status),
+			Valid:         true,
+		}
+	}
+
 	partner, err = s.repo.UpdatePartner(ctx, repo.UpdatePartnerParams{
 		ID: partnerUUID,
 		Name:  dto.Name,
@@ -172,6 +181,7 @@ func (s *partnerService) UpdatePartner(
 			String: dto.Phone,
 			Valid:  dto.Phone != "",
 		},
+		Status: status,
 	})
 	if err != nil {
 		return PartnerResponse{}, err

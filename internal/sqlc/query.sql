@@ -210,7 +210,14 @@ INSERT INTO partners (
 UPDATE partners SET
   name=$2,
   email=$3,
-  phone=$4
+  phone=$4,
+  status=$5
+WHERE id = $1
+RETURNING *;
+
+-- name: UpdatePartnerStatus :one
+UPDATE partners SET
+  status=$2
 WHERE id = $1
 RETURNING *;
 
@@ -248,6 +255,10 @@ SELECT * FROM partner_invitations WHERE partner_id = $1 ORDER BY created_at DESC
 
 -- name: UpdatePartnerInvitationStatus :one
 UPDATE partner_invitations SET status = $2 WHERE id = $1 RETURNING *;
+
+-- name: ExpireSupersededPartnerInvitations :exec
+UPDATE partner_invitations SET status = 'expired'
+WHERE partner_id = $1 AND email = $2 AND status = 'pending' AND id != $3;
 
 
 -- ============================================================
@@ -296,13 +307,15 @@ INSERT INTO forms (
   template_id,
   title,
   description,
-  status
+  status,
+  allow_resubmit
 ) VALUES (
   $1,
   $2,
   $3,
   $4,
-  $5
+  $5,
+  $6
 ) RETURNING *;
 
 -- name: GetFormByID :one
@@ -317,7 +330,8 @@ ORDER BY created_at DESC;
 UPDATE forms SET
   title = $2,
   description = $3,
-  status = $4
+  status = $4,
+  allow_resubmit = $5
 WHERE id = $1
 RETURNING *;
 
@@ -330,14 +344,16 @@ INSERT INTO forms (
   template_id,
   title,
   description,
-  status
+  status,
+  allow_resubmit
 )
 SELECT
   $1,
   $2,
   $3,
   ft.description,
-  'draft'
+  'draft',
+  false
 FROM form_templates ft
 WHERE ft.id = $2
 RETURNING *;
@@ -508,6 +524,48 @@ ORDER BY
   CASE WHEN sqlc.arg(sort_col)::text = 'created_at' AND sqlc.arg(sort_order)::text = 'desc' THEN fs.created_at END DESC,
   fs.submitted_at DESC
 LIMIT sqlc.arg(limit_val) OFFSET sqlc.arg(offset_val);
+
+-- ============================================================
+-- FORM ASSIGNMENTS
+-- ============================================================
+
+-- name: AssignFormToPartner :one
+INSERT INTO form_assignments (form_id, partner_id, assigned_by, due_at)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (form_id, partner_id) WHERE status != 'revoked' DO NOTHING
+RETURNING *;
+
+-- name: GetLiveAssignment :one
+SELECT * FROM form_assignments
+WHERE form_id = $1 AND partner_id = $2 AND status != 'revoked';
+
+-- name: GetAssignmentsByFormID :many
+SELECT fa.*,
+       p.name AS partner_name,
+       p.email AS partner_email,
+       (SELECT COUNT(*) FROM form_submissions fs WHERE fs.form_id = fa.form_id AND fs.partner_id = fa.partner_id) AS submissions_count
+FROM form_assignments fa
+JOIN partners p ON p.id = fa.partner_id
+WHERE fa.form_id = $1
+  AND (sqlc.narg(status_filter)::text IS NULL OR fa.status = sqlc.narg(status_filter)::text)
+ORDER BY fa.created_at DESC;
+
+-- name: GetAssignmentsByPartnerID :many
+SELECT fa.*,
+       f.title AS form_title,
+       f.status AS form_status
+FROM form_assignments fa
+JOIN forms f ON f.id = fa.form_id
+WHERE fa.partner_id = $1
+  AND (sqlc.narg(status_filter)::text IS NULL OR fa.status = sqlc.narg(status_filter)::text)
+ORDER BY fa.created_at DESC;
+
+-- name: UpdateAssignmentStatus :one
+UPDATE form_assignments SET
+  status = $2,
+  submitted_at = $3
+WHERE id = $1
+RETURNING *;
 
 -- name: GetSubmissionEnrichedByID :one
 SELECT fs.*,

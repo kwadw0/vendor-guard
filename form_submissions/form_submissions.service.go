@@ -14,6 +14,10 @@ import (
 
 var ErrSubmissionNotFound = errors.New("submission not found")
 var ErrAccessDenied = errors.New("access denied")
+var ErrAssignmentRequired = errors.New("no live assignment for this form and partner")
+var ErrAlreadySubmitted = errors.New("assignment already submitted and form disallows resubmission")
+var ErrFormNotActive = errors.New("form is not active")
+var ErrPartnerInactive = errors.New("partner is not active")
 
 type FormSubmissionService interface {
 	CreateSubmission(ctx context.Context, formID string, dto CreateFormSubmissionDto, userID string) (FormSubmissionResponse, error)
@@ -49,6 +53,36 @@ func (s *formSubmissionService) CreateSubmission(ctx context.Context, formID str
 		return FormSubmissionResponse{}, ErrAccessDenied
 	}
 
+	// Submit guard: the assignment is the permission slip. No live
+	// assignment (or revoked one) => no submission, even with the form ID.
+	form, err := s.repo.GetFormByID(ctx, formUUID)
+	if err != nil {
+		return FormSubmissionResponse{}, ErrSubmissionNotFound
+	}
+	if form.OrganizationID != partner.OrganizationID {
+		return FormSubmissionResponse{}, ErrAccessDenied
+	}
+	if form.Status != "active" {
+		return FormSubmissionResponse{}, ErrFormNotActive
+	}
+	if partner.Status.Valid {
+		switch string(partner.Status.PartnerStatus) {
+		case "inactive", "suspended":
+			return FormSubmissionResponse{}, ErrPartnerInactive
+		}
+	}
+	assignment, err := s.repo.GetLiveAssignment(ctx, repo.GetLiveAssignmentParams{
+		FormID:    formUUID,
+		PartnerID: partner.ID,
+	})
+	if err != nil {
+		return FormSubmissionResponse{}, ErrAssignmentRequired
+	}
+	// One submission per assignment unless the form allows resubmission.
+	if assignment.Status == "submitted" && !form.AllowResubmit {
+		return FormSubmissionResponse{}, ErrAlreadySubmitted
+	}
+
 	responsesJSON, err := json.Marshal(dto.Responses)
 	if err != nil {
 		return FormSubmissionResponse{}, err
@@ -72,6 +106,13 @@ func (s *formSubmissionService) CreateSubmission(ctx context.Context, formID str
 	if err != nil {
 		return FormSubmissionResponse{}, err
 	}
+
+	// Flip the assignment to submitted (best-effort: the submission itself won).
+	_, _ = s.repo.UpdateAssignmentStatus(ctx, repo.UpdateAssignmentStatusParams{
+		ID:          assignment.ID,
+		Status:      "submitted",
+		SubmittedAt: pgtype.Timestamptz{Time: now, Valid: true},
+	})
 	return mapSubmissionToResponse(submission), nil
 }
 

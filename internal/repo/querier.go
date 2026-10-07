@@ -12,6 +12,10 @@ import (
 )
 
 type Querier interface {
+	// ============================================================
+	// FORM ASSIGNMENTS
+	// ============================================================
+	AssignFormToPartner(ctx context.Context, arg AssignFormToPartnerParams) (FormAssignment, error)
 	CloneTemplateToForm(ctx context.Context, arg CloneTemplateToFormParams) (Form, error)
 	CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) (EmailVerificationToken, error)
 	// ============================================================
@@ -54,9 +58,12 @@ type Querier interface {
 	DeletePasswordResetByToken(ctx context.Context, token string) error
 	DeleteRole(ctx context.Context, id uuid.UUID) (Role, error)
 	DeleteUser(ctx context.Context, id uuid.UUID) error
+	ExpireSupersededPartnerInvitations(ctx context.Context, arg ExpireSupersededPartnerInvitationsParams) error
 	GetAllFormTemplates(ctx context.Context) ([]FormTemplate, error)
 	GetAllOrganizations(ctx context.Context) ([]Organization, error)
 	GetAllPartners(ctx context.Context) ([]Partner, error)
+	GetAssignmentsByFormID(ctx context.Context, arg GetAssignmentsByFormIDParams) ([]GetAssignmentsByFormIDRow, error)
+	GetAssignmentsByPartnerID(ctx context.Context, arg GetAssignmentsByPartnerIDParams) ([]GetAssignmentsByPartnerIDRow, error)
 	GetEmailVerificationByToken(ctx context.Context, token string) (EmailVerificationToken, error)
 	GetFormByID(ctx context.Context, id uuid.UUID) (Form, error)
 	GetFormFieldByID(ctx context.Context, id uuid.UUID) (FormField, error)
@@ -69,6 +76,7 @@ type Querier interface {
 	GetFormSubmissionsByPartnerID(ctx context.Context, partnerID uuid.UUID) ([]FormSubmission, error)
 	GetFormTemplateByID(ctx context.Context, id uuid.UUID) (FormTemplate, error)
 	GetFormsByOrg(ctx context.Context, organizationID uuid.UUID) ([]Form, error)
+	GetLiveAssignment(ctx context.Context, arg GetLiveAssignmentParams) (FormAssignment, error)
 	GetOrganizationById(ctx context.Context, id uuid.UUID) (Organization, error)
 	GetOrganizationByUserID(ctx context.Context, dollar_1 uuid.UUID) (Organization, error)
 	GetPartnerById(ctx context.Context, id uuid.UUID) (Partner, error)
@@ -91,6 +99,7 @@ type Querier interface {
 	MarkPasswordResetUsed(ctx context.Context, id uuid.UUID) (PasswordResetToken, error)
 	ReviewFormSubmission(ctx context.Context, arg ReviewFormSubmissionParams) (FormSubmission, error)
 	RevokeRefreshToken(ctx context.Context, id uuid.UUID) error
+	UpdateAssignmentStatus(ctx context.Context, arg UpdateAssignmentStatusParams) (FormAssignment, error)
 	UpdateForm(ctx context.Context, arg UpdateFormParams) (Form, error)
 	UpdateFormField(ctx context.Context, arg UpdateFormFieldParams) (FormField, error)
 	UpdateFormSection(ctx context.Context, arg UpdateFormSectionParams) (FormSection, error)
@@ -99,6 +108,7 @@ type Querier interface {
 	UpdateOrganization(ctx context.Context, arg UpdateOrganizationParams) (Organization, error)
 	UpdatePartner(ctx context.Context, arg UpdatePartnerParams) (Partner, error)
 	UpdatePartnerInvitationStatus(ctx context.Context, arg UpdatePartnerInvitationStatusParams) (PartnerInvitation, error)
+	UpdatePartnerStatus(ctx context.Context, arg UpdatePartnerStatusParams) (Partner, error)
 	UpdateRole(ctx context.Context, arg UpdateRoleParams) (Role, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpdateUserOrganization(ctx context.Context, arg UpdateUserOrganizationParams) (User, error)

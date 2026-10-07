@@ -12,23 +12,65 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const assignFormToPartner = `-- name: AssignFormToPartner :one
+
+INSERT INTO form_assignments (form_id, partner_id, assigned_by, due_at)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (form_id, partner_id) WHERE status != 'revoked' DO NOTHING
+RETURNING id, form_id, partner_id, status, assigned_by, due_at, submitted_at, created_at, updated_at
+`
+
+type AssignFormToPartnerParams struct {
+	FormID     uuid.UUID          `json:"form_id"`
+	PartnerID  uuid.UUID          `json:"partner_id"`
+	AssignedBy pgtype.UUID        `json:"assigned_by"`
+	DueAt      pgtype.Timestamptz `json:"due_at"`
+}
+
+// ============================================================
+// FORM ASSIGNMENTS
+// ============================================================
+func (q *Queries) AssignFormToPartner(ctx context.Context, arg AssignFormToPartnerParams) (FormAssignment, error) {
+	row := q.db.QueryRow(ctx, assignFormToPartner,
+		arg.FormID,
+		arg.PartnerID,
+		arg.AssignedBy,
+		arg.DueAt,
+	)
+	var i FormAssignment
+	err := row.Scan(
+		&i.ID,
+		&i.FormID,
+		&i.PartnerID,
+		&i.Status,
+		&i.AssignedBy,
+		&i.DueAt,
+		&i.SubmittedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const cloneTemplateToForm = `-- name: CloneTemplateToForm :one
 INSERT INTO forms (
   organization_id,
   template_id,
   title,
   description,
-  status
+  status,
+  allow_resubmit
 )
 SELECT
   $1,
   $2,
   $3,
   ft.description,
-  'draft'
+  'draft',
+  false
 FROM form_templates ft
 WHERE ft.id = $2
-RETURNING id, organization_id, template_id, title, description, status, created_at, updated_at
+RETURNING id, organization_id, template_id, title, description, status, created_at, updated_at, allow_resubmit
 `
 
 type CloneTemplateToFormParams struct {
@@ -49,6 +91,7 @@ func (q *Queries) CloneTemplateToForm(ctx context.Context, arg CloneTemplateToFo
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AllowResubmit,
 	)
 	return i, err
 }
@@ -84,14 +127,16 @@ INSERT INTO forms (
   template_id,
   title,
   description,
-  status
+  status,
+  allow_resubmit
 ) VALUES (
   $1,
   $2,
   $3,
   $4,
-  $5
-) RETURNING id, organization_id, template_id, title, description, status, created_at, updated_at
+  $5,
+  $6
+) RETURNING id, organization_id, template_id, title, description, status, created_at, updated_at, allow_resubmit
 `
 
 type CreateFormParams struct {
@@ -100,6 +145,7 @@ type CreateFormParams struct {
 	Title          string      `json:"title"`
 	Description    pgtype.Text `json:"description"`
 	Status         string      `json:"status"`
+	AllowResubmit  bool        `json:"allow_resubmit"`
 }
 
 // ============================================================
@@ -112,6 +158,7 @@ func (q *Queries) CreateForm(ctx context.Context, arg CreateFormParams) (Form, e
 		arg.Title,
 		arg.Description,
 		arg.Status,
+		arg.AllowResubmit,
 	)
 	var i Form
 	err := row.Scan(
@@ -123,6 +170,7 @@ func (q *Queries) CreateForm(ctx context.Context, arg CreateFormParams) (Form, e
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AllowResubmit,
 	)
 	return i, err
 }
@@ -727,6 +775,22 @@ func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const expireSupersededPartnerInvitations = `-- name: ExpireSupersededPartnerInvitations :exec
+UPDATE partner_invitations SET status = 'expired'
+WHERE partner_id = $1 AND email = $2 AND status = 'pending' AND id != $3
+`
+
+type ExpireSupersededPartnerInvitationsParams struct {
+	PartnerID uuid.UUID `json:"partner_id"`
+	Email     string    `json:"email"`
+	ID        uuid.UUID `json:"id"`
+}
+
+func (q *Queries) ExpireSupersededPartnerInvitations(ctx context.Context, arg ExpireSupersededPartnerInvitationsParams) error {
+	_, err := q.db.Exec(ctx, expireSupersededPartnerInvitations, arg.PartnerID, arg.Email, arg.ID)
+	return err
+}
+
 const getAllFormTemplates = `-- name: GetAllFormTemplates :many
 SELECT id, title, description, category, is_active, created_at, updated_at FROM form_templates
 WHERE is_active = true
@@ -831,6 +895,133 @@ func (q *Queries) GetAllPartners(ctx context.Context) ([]Partner, error) {
 	return items, nil
 }
 
+const getAssignmentsByFormID = `-- name: GetAssignmentsByFormID :many
+SELECT fa.id, fa.form_id, fa.partner_id, fa.status, fa.assigned_by, fa.due_at, fa.submitted_at, fa.created_at, fa.updated_at,
+       p.name AS partner_name,
+       p.email AS partner_email,
+       (SELECT COUNT(*) FROM form_submissions fs WHERE fs.form_id = fa.form_id AND fs.partner_id = fa.partner_id) AS submissions_count
+FROM form_assignments fa
+JOIN partners p ON p.id = fa.partner_id
+WHERE fa.form_id = $1
+  AND ($2::text IS NULL OR fa.status = $2::text)
+ORDER BY fa.created_at DESC
+`
+
+type GetAssignmentsByFormIDParams struct {
+	FormID       uuid.UUID   `json:"form_id"`
+	StatusFilter pgtype.Text `json:"status_filter"`
+}
+
+type GetAssignmentsByFormIDRow struct {
+	ID               uuid.UUID          `json:"id"`
+	FormID           uuid.UUID          `json:"form_id"`
+	PartnerID        uuid.UUID          `json:"partner_id"`
+	Status           string             `json:"status"`
+	AssignedBy       pgtype.UUID        `json:"assigned_by"`
+	DueAt            pgtype.Timestamptz `json:"due_at"`
+	SubmittedAt      pgtype.Timestamptz `json:"submitted_at"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	PartnerName      string             `json:"partner_name"`
+	PartnerEmail     string             `json:"partner_email"`
+	SubmissionsCount int64              `json:"submissions_count"`
+}
+
+func (q *Queries) GetAssignmentsByFormID(ctx context.Context, arg GetAssignmentsByFormIDParams) ([]GetAssignmentsByFormIDRow, error) {
+	rows, err := q.db.Query(ctx, getAssignmentsByFormID, arg.FormID, arg.StatusFilter)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAssignmentsByFormIDRow
+	for rows.Next() {
+		var i GetAssignmentsByFormIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FormID,
+			&i.PartnerID,
+			&i.Status,
+			&i.AssignedBy,
+			&i.DueAt,
+			&i.SubmittedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.PartnerName,
+			&i.PartnerEmail,
+			&i.SubmissionsCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getAssignmentsByPartnerID = `-- name: GetAssignmentsByPartnerID :many
+SELECT fa.id, fa.form_id, fa.partner_id, fa.status, fa.assigned_by, fa.due_at, fa.submitted_at, fa.created_at, fa.updated_at,
+       f.title AS form_title,
+       f.status AS form_status
+FROM form_assignments fa
+JOIN forms f ON f.id = fa.form_id
+WHERE fa.partner_id = $1
+  AND ($2::text IS NULL OR fa.status = $2::text)
+ORDER BY fa.created_at DESC
+`
+
+type GetAssignmentsByPartnerIDParams struct {
+	PartnerID    uuid.UUID   `json:"partner_id"`
+	StatusFilter pgtype.Text `json:"status_filter"`
+}
+
+type GetAssignmentsByPartnerIDRow struct {
+	ID          uuid.UUID          `json:"id"`
+	FormID      uuid.UUID          `json:"form_id"`
+	PartnerID   uuid.UUID          `json:"partner_id"`
+	Status      string             `json:"status"`
+	AssignedBy  pgtype.UUID        `json:"assigned_by"`
+	DueAt       pgtype.Timestamptz `json:"due_at"`
+	SubmittedAt pgtype.Timestamptz `json:"submitted_at"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	FormTitle   string             `json:"form_title"`
+	FormStatus  string             `json:"form_status"`
+}
+
+func (q *Queries) GetAssignmentsByPartnerID(ctx context.Context, arg GetAssignmentsByPartnerIDParams) ([]GetAssignmentsByPartnerIDRow, error) {
+	rows, err := q.db.Query(ctx, getAssignmentsByPartnerID, arg.PartnerID, arg.StatusFilter)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAssignmentsByPartnerIDRow
+	for rows.Next() {
+		var i GetAssignmentsByPartnerIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FormID,
+			&i.PartnerID,
+			&i.Status,
+			&i.AssignedBy,
+			&i.DueAt,
+			&i.SubmittedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.FormTitle,
+			&i.FormStatus,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getEmailVerificationByToken = `-- name: GetEmailVerificationByToken :one
 SELECT id, user_id, token, expires_at, created_at FROM email_verification_tokens WHERE token = $1
 `
@@ -849,7 +1040,7 @@ func (q *Queries) GetEmailVerificationByToken(ctx context.Context, token string)
 }
 
 const getFormByID = `-- name: GetFormByID :one
-SELECT id, organization_id, template_id, title, description, status, created_at, updated_at FROM forms WHERE id = $1
+SELECT id, organization_id, template_id, title, description, status, created_at, updated_at, allow_resubmit FROM forms WHERE id = $1
 `
 
 func (q *Queries) GetFormByID(ctx context.Context, id uuid.UUID) (Form, error) {
@@ -864,6 +1055,7 @@ func (q *Queries) GetFormByID(ctx context.Context, id uuid.UUID) (Form, error) {
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AllowResubmit,
 	)
 	return i, err
 }
@@ -1153,7 +1345,7 @@ func (q *Queries) GetFormTemplateByID(ctx context.Context, id uuid.UUID) (FormTe
 }
 
 const getFormsByOrg = `-- name: GetFormsByOrg :many
-SELECT id, organization_id, template_id, title, description, status, created_at, updated_at FROM forms
+SELECT id, organization_id, template_id, title, description, status, created_at, updated_at, allow_resubmit FROM forms
 WHERE organization_id = $1
 ORDER BY created_at DESC
 `
@@ -1176,6 +1368,7 @@ func (q *Queries) GetFormsByOrg(ctx context.Context, organizationID uuid.UUID) (
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.AllowResubmit,
 		); err != nil {
 			return nil, err
 		}
@@ -1185,6 +1378,33 @@ func (q *Queries) GetFormsByOrg(ctx context.Context, organizationID uuid.UUID) (
 		return nil, err
 	}
 	return items, nil
+}
+
+const getLiveAssignment = `-- name: GetLiveAssignment :one
+SELECT id, form_id, partner_id, status, assigned_by, due_at, submitted_at, created_at, updated_at FROM form_assignments
+WHERE form_id = $1 AND partner_id = $2 AND status != 'revoked'
+`
+
+type GetLiveAssignmentParams struct {
+	FormID    uuid.UUID `json:"form_id"`
+	PartnerID uuid.UUID `json:"partner_id"`
+}
+
+func (q *Queries) GetLiveAssignment(ctx context.Context, arg GetLiveAssignmentParams) (FormAssignment, error) {
+	row := q.db.QueryRow(ctx, getLiveAssignment, arg.FormID, arg.PartnerID)
+	var i FormAssignment
+	err := row.Scan(
+		&i.ID,
+		&i.FormID,
+		&i.PartnerID,
+		&i.Status,
+		&i.AssignedBy,
+		&i.DueAt,
+		&i.SubmittedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const getOrganizationById = `-- name: GetOrganizationById :one
@@ -1893,20 +2113,53 @@ func (q *Queries) RevokeRefreshToken(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const updateAssignmentStatus = `-- name: UpdateAssignmentStatus :one
+UPDATE form_assignments SET
+  status = $2,
+  submitted_at = $3
+WHERE id = $1
+RETURNING id, form_id, partner_id, status, assigned_by, due_at, submitted_at, created_at, updated_at
+`
+
+type UpdateAssignmentStatusParams struct {
+	ID          uuid.UUID          `json:"id"`
+	Status      string             `json:"status"`
+	SubmittedAt pgtype.Timestamptz `json:"submitted_at"`
+}
+
+func (q *Queries) UpdateAssignmentStatus(ctx context.Context, arg UpdateAssignmentStatusParams) (FormAssignment, error) {
+	row := q.db.QueryRow(ctx, updateAssignmentStatus, arg.ID, arg.Status, arg.SubmittedAt)
+	var i FormAssignment
+	err := row.Scan(
+		&i.ID,
+		&i.FormID,
+		&i.PartnerID,
+		&i.Status,
+		&i.AssignedBy,
+		&i.DueAt,
+		&i.SubmittedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateForm = `-- name: UpdateForm :one
 UPDATE forms SET
   title = $2,
   description = $3,
-  status = $4
+  status = $4,
+  allow_resubmit = $5
 WHERE id = $1
-RETURNING id, organization_id, template_id, title, description, status, created_at, updated_at
+RETURNING id, organization_id, template_id, title, description, status, created_at, updated_at, allow_resubmit
 `
 
 type UpdateFormParams struct {
-	ID          uuid.UUID   `json:"id"`
-	Title       string      `json:"title"`
-	Description pgtype.Text `json:"description"`
-	Status      string      `json:"status"`
+	ID            uuid.UUID   `json:"id"`
+	Title         string      `json:"title"`
+	Description   pgtype.Text `json:"description"`
+	Status        string      `json:"status"`
+	AllowResubmit bool        `json:"allow_resubmit"`
 }
 
 func (q *Queries) UpdateForm(ctx context.Context, arg UpdateFormParams) (Form, error) {
@@ -1915,6 +2168,7 @@ func (q *Queries) UpdateForm(ctx context.Context, arg UpdateFormParams) (Form, e
 		arg.Title,
 		arg.Description,
 		arg.Status,
+		arg.AllowResubmit,
 	)
 	var i Form
 	err := row.Scan(
@@ -1926,6 +2180,7 @@ func (q *Queries) UpdateForm(ctx context.Context, arg UpdateFormParams) (Form, e
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AllowResubmit,
 	)
 	return i, err
 }
@@ -2155,16 +2410,18 @@ const updatePartner = `-- name: UpdatePartner :one
 UPDATE partners SET
   name=$2,
   email=$3,
-  phone=$4
+  phone=$4,
+  status=$5
 WHERE id = $1
 RETURNING id, organization_id, name, email, phone, status, created_at, updated_at
 `
 
 type UpdatePartnerParams struct {
-	ID    uuid.UUID   `json:"id"`
-	Name  string      `json:"name"`
-	Email string      `json:"email"`
-	Phone pgtype.Text `json:"phone"`
+	ID     uuid.UUID         `json:"id"`
+	Name   string            `json:"name"`
+	Email  string            `json:"email"`
+	Phone  pgtype.Text       `json:"phone"`
+	Status NullPartnerStatus `json:"status"`
 }
 
 func (q *Queries) UpdatePartner(ctx context.Context, arg UpdatePartnerParams) (Partner, error) {
@@ -2173,6 +2430,7 @@ func (q *Queries) UpdatePartner(ctx context.Context, arg UpdatePartnerParams) (P
 		arg.Name,
 		arg.Email,
 		arg.Phone,
+		arg.Status,
 	)
 	var i Partner
 	err := row.Scan(
@@ -2209,6 +2467,34 @@ func (q *Queries) UpdatePartnerInvitationStatus(ctx context.Context, arg UpdateP
 		&i.RoleID,
 		&i.Status,
 		&i.ExpiresAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updatePartnerStatus = `-- name: UpdatePartnerStatus :one
+UPDATE partners SET
+  status=$2
+WHERE id = $1
+RETURNING id, organization_id, name, email, phone, status, created_at, updated_at
+`
+
+type UpdatePartnerStatusParams struct {
+	ID     uuid.UUID         `json:"id"`
+	Status NullPartnerStatus `json:"status"`
+}
+
+func (q *Queries) UpdatePartnerStatus(ctx context.Context, arg UpdatePartnerStatusParams) (Partner, error) {
+	row := q.db.QueryRow(ctx, updatePartnerStatus, arg.ID, arg.Status)
+	var i Partner
+	err := row.Scan(
+		&i.ID,
+		&i.OrganizationID,
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

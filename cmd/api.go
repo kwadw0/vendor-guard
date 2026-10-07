@@ -11,6 +11,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 
 	"preuvio/auth"
+	"preuvio/form_assignments"
 	"preuvio/form_fields"
 	"preuvio/form_sections"
 	"preuvio/form_submissions"
@@ -113,6 +114,10 @@ func (app *application) mount() http.Handler {
 	partnerInviteService := partners.NewInviteService(repoQueries, app.config.jwtSecret, mailService)
 	partnerInviteHandler := partners.NewInviteHandler(partnerInviteService, app.validator)
 
+	// Assignment service - the permission slip behind every submission
+	assignmentService := form_assignments.NewService(repoQueries)
+	assignmentHandler := form_assignments.NewHandler(assignmentService, app.validator)
+
 	r.Route("/api/partners", func(r chi.Router) {
 		r.With(authMiddleware).Post("/", partnerHandler.CreatePartner)
 		r.With(authMiddleware).Get("/", partnerHandler.GetAllPartners)
@@ -123,6 +128,9 @@ func (app *application) mount() http.Handler {
 		// Partner invitation routes
 		r.With(authMiddleware).Post("/{partnerId}/invite", partnerInviteHandler.InvitePartnerUser)
 		r.With(authMiddleware).Get("/{partnerId}/invite", partnerInviteHandler.GetPartnerInvitations)
+
+		// Partner assignments (org view for the vendor profile page)
+		r.With(authMiddleware).Get("/{id}/assignments", assignmentHandler.GetAssignmentsByPartner)
 	})
 
 	// Public partner invitation acceptance
@@ -192,6 +200,17 @@ func (app *application) mount() http.Handler {
 		// Form submission routes
 		r.Post("/{id}/submissions", formSubmissionHandler.CreateSubmission)
 		r.Get("/{id}/submissions", formSubmissionHandler.GetSubmissionsByFormID)
+
+		// Form assignment routes (the permission slip behind submissions)
+		r.Post("/{id}/assign", assignmentHandler.AssignForm)
+		r.Get("/{id}/assignments", assignmentHandler.GetAssignmentsByForm)
+		r.Delete("/{id}/assignments/{partnerId}", assignmentHandler.RevokeAssignment)
+	})
+
+	// Vendor work queue - partner's assigned forms
+	r.Route("/api/assignments", func(r chi.Router) {
+		r.Use(authMiddleware)
+		r.Get("/me", assignmentHandler.GetMyAssignments)
 	})
 
 	// Generic section routes (update/delete both form and template sections)

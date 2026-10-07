@@ -7,10 +7,11 @@ type CreatePartnerDto struct {
 }
 
 type UpdatePartnerDto struct {
-	ID    string
-	Name  string `json:"name" validate:"required,min=2,max=255"`
-	Email string `json:"email" validate:"omitempty,email,max=255"`
-	Phone string `json:"phone" validate:"omitempty,max=255"`
+	ID     string
+	Name   string `json:"name" validate:"required,min=2,max=255"`
+	Email  string `json:"email" validate:"omitempty,email,max=255"`
+	Phone  string `json:"phone" validate:"omitempty,max=255"`
+	Status string `json:"status" validate:"omitempty,oneof=pending active inactive suspended"`
 }
 
 type PartnerResponse struct {

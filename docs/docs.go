@@ -24,6 +24,84 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/assignments/me": {
+            "get": {
+                "description": "Retrieves all forms assigned to the authenticated partner user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "form-assignments"
+                ],
+                "summary": "List my assigned forms (vendor work queue)",
+                "parameters": [
+                    {
+                        "enum": [
+                            "assigned",
+                            "submitted",
+                            "overdue",
+                            "revoked"
+                        ],
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Page (1-based, default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Limit (default 20, max 50)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Assignments retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/form_assignments.AssignmentResponse"
+                                            }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/definitions/utils.PaginationMeta"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/auth/forgot-password": {
             "post": {
                 "description": "Creates a reset token and emails a reset link (always 200 to avoid enumeration)",
@@ -1024,6 +1102,231 @@ const docTemplate = `{
                 ]
             }
         },
+        "/api/forms/{id}/assign": {
+            "post": {
+                "description": "Creates assignments for the given partners. Idempotent: already-assigned pairs are reported in skipped. Form must be active, partners must belong to your org and be active.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "form-assignments"
+                ],
+                "summary": "Assign a form to partners",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Form UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Assignment payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/form_assignments.AssignFormDto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Form assigned successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/form_assignments.AssignResultResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Form not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Form is not active",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/forms/{id}/assignments": {
+            "get": {
+                "description": "Retrieves all assignments for a form with partner enrichment",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "form-assignments"
+                ],
+                "summary": "List form assignments",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Form UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "assigned",
+                            "submitted",
+                            "revoked"
+                        ],
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Page (1-based, default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Limit (default 20, max 50)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Assignments retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/form_assignments.AssignmentResponse"
+                                            }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/definitions/utils.PaginationMeta"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Form not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/forms/{id}/assignments/{partnerId}": {
+            "delete": {
+                "description": "Revokes a partner's assignment (history preserved, future submits blocked)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "form-assignments"
+                ],
+                "summary": "Revoke a form assignment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Form UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Partner UUID",
+                        "name": "partnerId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Assignment revoked successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.SuccessResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Assignment not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/forms/{id}/detail": {
             "get": {
                 "description": "Retrieves a form with all its sections and nested fields in one call",
@@ -1163,7 +1466,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Submission payload",
+                        "description": "Submission payload (requires a live assignment for the caller's partner)",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -1198,7 +1501,19 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Access denied",
+                        "description": "Access denied, no assignment, form or partner inactive",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Form not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Already submitted and resubmission disallowed",
                         "schema": {
                             "$ref": "#/definitions/utils.ErrorResponse"
                         }
@@ -2002,6 +2317,90 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/partners/{id}/assignments": {
+            "get": {
+                "description": "Retrieves all assignments for a partner in your organization",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "form-assignments"
+                ],
+                "summary": "List partner assignments (org view)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Partner UUID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "assigned",
+                            "submitted",
+                            "revoked"
+                        ],
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Page (1-based, default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Limit (default 20, max 50)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Assignments retrieved successfully",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/form_assignments.AssignmentResponse"
+                                            }
+                                        },
+                                        "meta": {
+                                            "$ref": "#/definitions/utils.PaginationMeta"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "403": {
+                        "description": "Access denied",
                         "schema": {
                             "$ref": "#/definitions/utils.ErrorResponse"
                         }
@@ -3766,6 +4165,97 @@ const docTemplate = `{
                 }
             }
         },
+        "form_assignments.AssignFormDto": {
+            "type": "object",
+            "required": [
+                "partner_ids"
+            ],
+            "properties": {
+                "due_at": {
+                    "type": "string"
+                },
+                "partner_ids": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "form_assignments.AssignResultResponse": {
+            "type": "object",
+            "properties": {
+                "assigned": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/form_assignments.AssignmentResponse"
+                    }
+                },
+                "skipped": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/form_assignments.SkippedAssignment"
+                    }
+                }
+            }
+        },
+        "form_assignments.AssignmentResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "due_at": {
+                    "type": "string"
+                },
+                "form_id": {
+                    "type": "string"
+                },
+                "form_status": {
+                    "type": "string"
+                },
+                "form_title": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "partner_email": {
+                    "type": "string"
+                },
+                "partner_id": {
+                    "type": "string"
+                },
+                "partner_name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "submissions_count": {
+                    "type": "integer"
+                },
+                "submitted_at": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "form_assignments.SkippedAssignment": {
+            "type": "object",
+            "properties": {
+                "partner_id": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
         "form_fields.CreateFormFieldDto": {
             "type": "object",
             "required": [
@@ -4467,6 +4957,9 @@ const docTemplate = `{
                 "title"
             ],
             "properties": {
+                "allow_resubmit": {
+                    "type": "boolean"
+                },
                 "description": {
                     "type": "string",
                     "maxLength": 1000
@@ -4538,6 +5031,9 @@ const docTemplate = `{
         "forms.FormResponse": {
             "type": "object",
             "properties": {
+                "allow_resubmit": {
+                    "type": "boolean"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -4610,6 +5106,9 @@ const docTemplate = `{
                 "title"
             ],
             "properties": {
+                "allow_resubmit": {
+                    "type": "boolean"
+                },
                 "description": {
                     "type": "string",
                     "maxLength": 1000
@@ -4891,6 +5390,15 @@ const docTemplate = `{
                 "phone": {
                     "type": "string",
                     "maxLength": 255
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "pending",
+                        "active",
+                        "inactive",
+                        "suspended"
+                    ]
                 }
             }
         },

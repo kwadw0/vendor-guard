@@ -73,6 +73,19 @@ type Form struct {
 	Status         string             `json:"status"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	AllowResubmit  bool               `json:"allow_resubmit"`
+}
+
+type FormAssignment struct {
+	ID          uuid.UUID          `json:"id"`
+	FormID      uuid.UUID          `json:"form_id"`
+	PartnerID   uuid.UUID          `json:"partner_id"`
+	Status      string             `json:"status"`
+	AssignedBy  pgtype.UUID        `json:"assigned_by"`
+	DueAt       pgtype.Timestamptz `json:"due_at"`
+	SubmittedAt pgtype.Timestamptz `json:"submitted_at"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
 type FormField struct {

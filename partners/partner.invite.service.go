@@ -89,6 +89,14 @@ func (s *inviteService) InviteUser(ctx context.Context, partnerID, invitedByUser
 		return InvitationResponse{}, err
 	}
 
+	// Supersede older pending invites for the same partner+email so the
+	// list never shows stale "pending" rows alongside the live one.
+	_ = s.repo.ExpireSupersededPartnerInvitations(ctx, repo.ExpireSupersededPartnerInvitationsParams{
+		PartnerID: partnerUUID,
+		Email:     dto.Email,
+		ID:        uuid.Nil,
+	})
+
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 
 	invitation, err := s.repo.CreatePartnerInvitation(ctx, repo.CreatePartnerInvitationParams{
@@ -192,6 +200,32 @@ func (s *inviteService) AcceptInvitation(ctx context.Context, dto AcceptInviteDt
 	if err != nil {
 		return nil, err
 	}
+
+	// First accepted invitation onboards the vendor: pending -> active.
+	// Best-effort so a status write can never fail the accept itself.
+	// Suspended/inactive vendors are never auto-reactivated.
+	if partner, pErr := s.repo.GetPartnerById(ctx, invitation.PartnerID); pErr == nil {
+		if partner.Status.Valid && string(partner.Status.PartnerStatus) == "pending" {
+			if _, sErr := s.repo.UpdatePartnerStatus(ctx, repo.UpdatePartnerStatusParams{
+				ID: invitation.PartnerID,
+				Status: repo.NullPartnerStatus{
+					PartnerStatus: repo.PartnerStatusActive,
+					Valid:         true,
+				},
+			}); sErr != nil {
+				slog.Warn("failed to auto-activate partner on invite accept",
+					"partner_id", invitation.PartnerID.String(), "error", sErr)
+			}
+		}
+	}
+
+	// Expire any other pending invites for the same partner+email —
+	// otherwise the list keeps showing stale "pending" rows next to this one.
+	_ = s.repo.ExpireSupersededPartnerInvitations(ctx, repo.ExpireSupersededPartnerInvitationsParams{
+		PartnerID: invitation.PartnerID,
+		Email:     invitation.Email,
+		ID:        invitation.ID,
+	})
 
 	// Generate JWT tokens
 	tokens, err := jwt.GenerateTokenPair(user.ID.String(), user.RoleID.String(), s.jwtSecret, 15, 7)

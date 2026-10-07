@@ -43,10 +43,12 @@ func NewHandler(service FormSubmissionService, v *validator.Validate) FormSubmis
 //	@Accept			json
 //	@Produce		json
 //	@Param			id		path		string										true	"Form UUID"
-//	@Param			body	body		CreateFormSubmissionDto						true	"Submission payload"
+//	@Param			body	body		CreateFormSubmissionDto						true	"Submission payload (requires a live assignment for the caller's partner)"
 //	@Success		201		{object}	utils.SuccessResponse{data=FormSubmissionResponse}	"Submission created successfully"
 //	@Failure		400		{object}	utils.ErrorResponse							"Bad request or validation error"
-//	@Failure		403		{object}	utils.ErrorResponse							"Access denied"
+//	@Failure		403		{object}	utils.ErrorResponse							"Access denied, no assignment, form or partner inactive"
+//	@Failure		404		{object}	utils.ErrorResponse							"Form not found"
+//	@Failure		409		{object}	utils.ErrorResponse							"Already submitted and resubmission disallowed"
 //	@Failure		500		{object}	utils.ErrorResponse							"Internal server error"
 //	@Security		BearerAuth
 //	@Router			/api/forms/{id}/submissions [post]
@@ -64,11 +66,22 @@ func (h *formSubmissionHandler) CreateSubmission(w http.ResponseWriter, r *http.
 	}
 	submission, err := h.service.CreateSubmission(r.Context(), formID, dto, userID)
 	if err != nil {
-		if errors.Is(err, ErrAccessDenied) {
+		switch {
+		case errors.Is(err, ErrAccessDenied):
 			utils.ErrorJSON(w, http.StatusForbidden, err, "FORBIDDEN")
-			return
+		case errors.Is(err, ErrAssignmentRequired):
+			utils.ErrorJSON(w, http.StatusForbidden, err, "ASSIGNMENT_REQUIRED")
+		case errors.Is(err, ErrFormNotActive):
+			utils.ErrorJSON(w, http.StatusForbidden, err, "FORM_NOT_ACTIVE")
+		case errors.Is(err, ErrPartnerInactive):
+			utils.ErrorJSON(w, http.StatusForbidden, err, "PARTNER_INACTIVE")
+		case errors.Is(err, ErrSubmissionNotFound):
+			utils.ErrorJSON(w, http.StatusNotFound, err, "FORM_NOT_FOUND")
+		case errors.Is(err, ErrAlreadySubmitted):
+			utils.ErrorJSON(w, http.StatusConflict, err, "ALREADY_SUBMITTED")
+		default:
+			utils.ErrorJSON(w, http.StatusInternalServerError, err, "INTERNAL_ERROR")
 		}
-		utils.ErrorJSON(w, http.StatusInternalServerError, err, "INTERNAL_ERROR")
 		return
 	}
 	utils.WriteJSON(w, http.StatusCreated, "Submission created successfully", submission)

@@ -45,6 +45,10 @@ func (s *formService) CreateForm(ctx context.Context, dto CreateFormDto, userID 
 
 	// Scratch creation only - template cloning is via POST /templates/{id}/clone
 	// which correctly deep-copies sections/fields with lineage.
+	allowResubmit := false
+	if dto.AllowResubmit != nil {
+		allowResubmit = *dto.AllowResubmit
+	}
 	form, err := s.repo.CreateForm(ctx, repo.CreateFormParams{
 		OrganizationID: org.ID,
 		TemplateID:     pgtype.UUID{Valid: false},
@@ -53,7 +57,8 @@ func (s *formService) CreateForm(ctx context.Context, dto CreateFormDto, userID 
 			String: dto.Description,
 			Valid:  dto.Description != "",
 		},
-		Status: "draft",
+		Status:        "draft",
+		AllowResubmit: allowResubmit,
 	})
 	if err != nil {
 		return FormResponse{}, err
@@ -72,17 +77,36 @@ func (s *formService) GetFormByID(ctx context.Context, id string, userID string)
 		return FormResponse{}, err
 	}
 
-	org, err := s.repo.GetOrganizationByUserID(ctx, userUUID)
-	if err != nil {
-		return FormResponse{}, ErrAccessDenied
+	org, orgErr := s.repo.GetOrganizationByUserID(ctx, userUUID)
+	if orgErr == nil {
+		form, err := s.repo.GetFormByID(ctx, formUUID)
+		if err != nil {
+			return FormResponse{}, ErrFormNotFound
+		}
+
+		if form.OrganizationID != org.ID {
+			return FormResponse{}, ErrAccessDenied
+		}
+
+		return mapFormToResponse(form), nil
 	}
 
+	// Partner users may read forms assigned to them (vendor work queue).
+	partner, pErr := s.repo.GetPartnerByUserID(ctx, userUUID)
+	if pErr != nil {
+		return FormResponse{}, ErrAccessDenied
+	}
 	form, err := s.repo.GetFormByID(ctx, formUUID)
 	if err != nil {
 		return FormResponse{}, ErrFormNotFound
 	}
-
-	if form.OrganizationID != org.ID {
+	if form.OrganizationID != partner.OrganizationID {
+		return FormResponse{}, ErrAccessDenied
+	}
+	if _, err := s.repo.GetLiveAssignment(ctx, repo.GetLiveAssignmentParams{
+		FormID:    formUUID,
+		PartnerID: partner.ID,
+	}); err != nil {
 		return FormResponse{}, ErrAccessDenied
 	}
 
@@ -141,6 +165,10 @@ func (s *formService) UpdateForm(ctx context.Context, id string, dto UpdateFormD
 	if dto.Status != "" {
 		status = dto.Status
 	}
+	allowResubmit := form.AllowResubmit
+	if dto.AllowResubmit != nil {
+		allowResubmit = *dto.AllowResubmit
+	}
 
 	updated, err := s.repo.UpdateForm(ctx, repo.UpdateFormParams{
 		ID: formUUID,
@@ -149,7 +177,8 @@ func (s *formService) UpdateForm(ctx context.Context, id string, dto UpdateFormD
 			String: dto.Description,
 			Valid:  dto.Description != "",
 		},
-		Status: status,
+		Status:        status,
+		AllowResubmit: allowResubmit,
 	})
 	if err != nil {
 		return FormResponse{}, err
@@ -194,17 +223,42 @@ func (s *formService) GetFormDetail(ctx context.Context, id string, userID strin
 	if err != nil {
 		return FormDetailResponse{}, err
 	}
-	org, err := s.repo.GetOrganizationByUserID(ctx, userUUID)
-	if err != nil {
+	org, orgErr := s.repo.GetOrganizationByUserID(ctx, userUUID)
+	if orgErr == nil {
+		form, err := s.repo.GetFormByID(ctx, formUUID)
+		if err != nil {
+			return FormDetailResponse{}, ErrFormNotFound
+		}
+		if form.OrganizationID != org.ID {
+			return FormDetailResponse{}, ErrAccessDenied
+		}
+		return s.buildFormDetail(ctx, form)
+	}
+
+	// Partner users may read the full detail of forms assigned to them,
+	// so the vendor renderer needs only this one call.
+	partner, pErr := s.repo.GetPartnerByUserID(ctx, userUUID)
+	if pErr != nil {
 		return FormDetailResponse{}, ErrAccessDenied
 	}
 	form, err := s.repo.GetFormByID(ctx, formUUID)
 	if err != nil {
 		return FormDetailResponse{}, ErrFormNotFound
 	}
-	if form.OrganizationID != org.ID {
+	if form.OrganizationID != partner.OrganizationID {
 		return FormDetailResponse{}, ErrAccessDenied
 	}
+	if _, err := s.repo.GetLiveAssignment(ctx, repo.GetLiveAssignmentParams{
+		FormID:    formUUID,
+		PartnerID: partner.ID,
+	}); err != nil {
+		return FormDetailResponse{}, ErrAccessDenied
+	}
+	return s.buildFormDetail(ctx, form)
+}
+
+func (s *formService) buildFormDetail(ctx context.Context, form repo.Form) (FormDetailResponse, error) {
+	formUUID := form.ID
 	sections, err := s.repo.GetFormSectionsByFormID(ctx, pgtype.UUID{Bytes: formUUID, Valid: true})
 	if err != nil {
 		return FormDetailResponse{}, err
@@ -294,6 +348,7 @@ func mapFormToResponse(f repo.Form) FormResponse {
 		Title:          f.Title,
 		Description:    f.Description.String,
 		Status:         f.Status,
+		AllowResubmit:  f.AllowResubmit,
 		CreatedAt:      f.CreatedAt.Time.Format(time.RFC3339),
 		UpdatedAt:      f.UpdatedAt.Time.Format(time.RFC3339),
 	}
